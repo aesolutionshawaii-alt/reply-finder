@@ -1,8 +1,10 @@
 import { neon } from '@neondatabase/serverless';
 
 export function getDb() {
-  // TODO: Move back to env var once Vercel issue is resolved
-  const connectionString = 'postgresql://neondb_owner:npg_0pgxKatiPS8s@ep-divine-night-af68v4q5-pooler.c-2.us-west-2.aws.neon.tech/neondb?sslmode=require';
+  const connectionString = process.env.NEON_DATABASE_URL || process.env.POSTGRES_URL || process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error('Database URL not configured');
+  }
   return neon(connectionString);
 }
 
