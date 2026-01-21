@@ -11,6 +11,9 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",
     "@neondatabase/serverless": "^0.9.0",
+    "inngest": "^3.49.3",
+    "lucide-react": "^0.562.0",
+    "motion": "^12.28.1",
     "next": "^16.1.4",
     "react": "^18",
     "react-dom": "^18",

@@ -1,180 +1,439 @@
-import { getStripe } from '../../lib/stripe';
+'use client';
 
-async function createCheckout() {
-  'use server';
-
-  const stripe = getStripe();
-  const priceId = process.env.STRIPE_PRICE_ID;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-
-  if (!priceId) {
-    throw new Error('STRIPE_PRICE_ID not configured');
-  }
-
-  const session = await stripe.checkout.sessions.create({
-    mode: 'subscription',
-    payment_method_types: ['card'],
-    line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${appUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: appUrl,
-  });
-
-  return session.url;
-}
+import { useState } from 'react';
+import { motion } from 'motion/react';
+import { ArrowRight, Mail, Sparkles, Clock, Target, Check, Zap } from 'lucide-react';
+import { Button } from './components/ui/button';
+import { Card } from './components/ui/card';
 
 export default function Home() {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleFreeSignup = async () => {
+    if (!email) {
+      // Focus the email input if empty
+      document.querySelector<HTMLInputElement>('input[type="email"]')?.focus();
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch('/api/signup/free', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        localStorage.setItem('xeroscroll_email', email);
+        window.location.href = `/dashboard?email=${encodeURIComponent(email)}`;
+      } else {
+        alert(data.error || 'Something went wrong');
+      }
+    } catch {
+      alert('Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProCheckout = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/checkout', { method: 'POST' });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch {
+      alert('Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <main className="min-h-screen">
-      {/* Hero */}
-      <section className="px-6 py-24 max-w-4xl mx-auto">
-        <h1 className="text-5xl font-bold tracking-tight mb-6">
-          Stop scrolling.<br />
-          Start replying.
-        </h1>
-        <p className="text-xl text-gray-600 mb-8 max-w-2xl">
-          Get a daily email with the best reply opportunities from accounts you care about.
-          We find the tweets, suggest angles, you write the replies.
-        </p>
+    <div className="min-h-screen bg-black text-white">
+      {/* Navigation */}
+      <nav className="border-b border-white/10 bg-black/50 backdrop-blur-xl fixed top-0 w-full z-50">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Zap className="w-5 h-5" />
+            <span className="font-semibold text-lg">XeroScroll</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <a href="#pricing" className="text-sm text-gray-400 hover:text-white transition-colors">
+              Pricing
+            </a>
+            <a href="/dashboard">
+              <Button variant="outline" size="sm" className="border-white/10 hover:bg-white/5">
+                Sign In
+              </Button>
+            </a>
+          </div>
+        </div>
+      </nav>
 
-        <form
-          action={async () => {
-            'use server';
-            const url = await createCheckout();
-            if (url) {
-              const { redirect } = await import('next/navigation');
-              redirect(url);
-            }
-          }}
-        >
-          <button
-            type="submit"
-            className="bg-black text-white px-8 py-4 rounded-lg text-lg font-medium hover:bg-gray-800 transition"
+      {/* Hero Section */}
+      <section className="pt-32 pb-20 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
           >
-            Start for $29/month
-          </button>
-        </form>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 mb-8">
+              <Sparkles className="w-4 h-4 text-blue-400" />
+              <span className="text-sm text-gray-300">AI-powered growth without the scroll</span>
+            </div>
 
-        <p className="text-sm text-gray-500 mt-4">
-          Cancel anytime. No long-term commitment.
-        </p>
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 tracking-tight">
+              Grow on X
+              <br />
+              <span className="text-gray-500">without scrolling</span>
+            </h1>
+
+            <p className="text-xl text-gray-400 mb-12 max-w-2xl mx-auto leading-relaxed">
+              Get daily email digests of reply opportunities. AI drafts your replies.
+              30 seconds a day. No feed scrolling required.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <div className="flex gap-2 w-full sm:w-auto">
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 flex-1 sm:w-64"
+                />
+                <Button
+                  onClick={handleFreeSignup}
+                  disabled={loading}
+                  className="bg-white text-black hover:bg-gray-200 gap-2"
+                >
+                  {loading ? 'Loading...' : 'Start Free'}
+                  {!loading && <ArrowRight className="w-4 h-4" />}
+                </Button>
+              </div>
+            </div>
+            <p className="text-sm text-gray-500 mt-4">Free tier available. No credit card required.</p>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="pb-20 px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="text-center"
+            >
+              <div className="text-5xl font-bold mb-2">30s</div>
+              <div className="text-gray-400">Daily time investment</div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="text-center"
+            >
+              <div className="text-5xl font-bold mb-2">0</div>
+              <div className="text-gray-400">Hours scrolling</div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3 }}
+              className="text-center"
+            >
+              <div className="text-5xl font-bold mb-2">10x</div>
+              <div className="text-gray-400">More meaningful replies</div>
+            </motion.div>
+          </div>
+        </div>
       </section>
 
       {/* How it works */}
-      <section className="px-6 py-16 bg-gray-50">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold mb-12">How it works</h2>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <div>
-              <div className="text-4xl font-bold text-gray-300 mb-4">1</div>
-              <h3 className="text-xl font-semibold mb-2">Pick 10 accounts</h3>
-              <p className="text-gray-600">
-                Choose the accounts you want to build relationships with. Industry leaders, potential customers, peers.
-              </p>
-            </div>
-
-            <div>
-              <div className="text-4xl font-bold text-gray-300 mb-4">2</div>
-              <h3 className="text-xl font-semibold mb-2">We find opportunities</h3>
-              <p className="text-gray-600">
-                Every day we scan their tweets and find the best ones to reply to. Questions, hot takes, wins, struggles.
-              </p>
-            </div>
-
-            <div>
-              <div className="text-4xl font-bold text-gray-300 mb-4">3</div>
-              <h3 className="text-xl font-semibold mb-2">You reply and grow</h3>
-              <p className="text-gray-600">
-                We suggest angles. You write authentic replies. Build real relationships without endless scrolling.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Why replies matter */}
-      <section className="px-6 py-16">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold mb-8">Why replies are the best growth strategy</h2>
-
-          <div className="space-y-6 text-lg text-gray-600">
-            <p>
-              The X algorithm rewards conversation. A thoughtful reply on a big account&apos;s tweet
-              can get you more visibility than your own posts.
-            </p>
-            <p>
-              But finding the right tweets to reply to takes time. You have to scroll,
-              filter through noise, and hope you catch something good.
-            </p>
-            <p>
-              XeroScroll does the scrolling for you. Every morning, you get an email with
-              the best opportunities from the accounts that matter to you.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* What you get */}
-      <section className="px-6 py-16 bg-gray-50">
-        <div className="max-w-4xl mx-auto">
-          <h2 className="text-3xl font-bold mb-8">What you get</h2>
-
-          <ul className="space-y-4 text-lg">
-            <li className="flex items-start gap-3">
-              <span className="text-green-600 mt-1">&#10003;</span>
-              <span>Daily email digest at 6am (your time)</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="text-green-600 mt-1">&#10003;</span>
-              <span>Monitor up to 10 accounts</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="text-green-600 mt-1">&#10003;</span>
-              <span>Top 10 reply opportunities, ranked by potential</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="text-green-600 mt-1">&#10003;</span>
-              <span>Suggested reply angles for each tweet</span>
-            </li>
-            <li className="flex items-start gap-3">
-              <span className="text-green-600 mt-1">&#10003;</span>
-              <span>Direct links to reply instantly</span>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="px-6 py-24">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-6">Ready to grow through replies?</h2>
-
-          <form
-            action={async () => {
-              'use server';
-              const url = await createCheckout();
-              if (url) {
-                const { redirect } = await import('next/navigation');
-                redirect(url);
-              }
-            }}
+      <section className="py-20 px-6 border-t border-white/10">
+        <div className="max-w-5xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
           >
-            <button
-              type="submit"
-              className="bg-black text-white px-8 py-4 rounded-lg text-lg font-medium hover:bg-gray-800 transition"
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">How it works</h2>
+            <p className="text-gray-400 text-lg">Three simple steps to grow your X presence</p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
             >
-              Start for $29/month
-            </button>
-          </form>
+              <Card className="p-8 bg-white/5 border-white/10 hover:bg-white/[0.07] transition-all h-full">
+                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-6">
+                  <Mail className="w-6 h-6" />
+                </div>
+                <h3 className="text-2xl font-semibold mb-3">Daily digest</h3>
+                <p className="text-gray-400 leading-relaxed">
+                  Every morning, get an email with the best reply opportunities from accounts you care about.
+                </p>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+            >
+              <Card className="p-8 bg-white/5 border-white/10 hover:bg-white/[0.07] transition-all h-full">
+                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-6">
+                  <Sparkles className="w-6 h-6" />
+                </div>
+                <h3 className="text-2xl font-semibold mb-3">AI-drafted replies</h3>
+                <p className="text-gray-400 leading-relaxed">
+                  Each opportunity comes with an AI-generated reply that matches your voice and adds value.
+                </p>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3 }}
+            >
+              <Card className="p-8 bg-white/5 border-white/10 hover:bg-white/[0.07] transition-all h-full">
+                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-6">
+                  <Target className="w-6 h-6" />
+                </div>
+                <h3 className="text-2xl font-semibold mb-3">One-click reply</h3>
+                <p className="text-gray-400 leading-relaxed">
+                  Review, edit if needed, and reply directly from your email. No X app required.
+                </p>
+              </Card>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Visual Demo */}
+      <section className="py-20 px-6">
+        <div className="max-w-4xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <Card className="p-8 md:p-12 bg-gradient-to-br from-white/10 to-white/5 border-white/10">
+              <div className="flex items-start gap-4 mb-6">
+                <Clock className="w-5 h-5 text-gray-400 mt-1" />
+                <div>
+                  <div className="text-sm text-gray-400 mb-1">Today, 6:00 AM HST</div>
+                  <div className="font-semibold text-lg mb-4">Your Daily Digest</div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="p-6 bg-black/40 rounded-lg border border-white/5">
+                  <div className="flex items-start gap-3 mb-4">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500" />
+                    <div className="flex-1">
+                      <div className="font-medium mb-1">@techfounder</div>
+                      <p className="text-gray-300 text-sm leading-relaxed">
+                        Just shipped our new feature after 3 months of work. The team pulled through
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pl-13 border-l-2 border-blue-500/50 ml-5">
+                    <div className="pl-4 py-2">
+                      <div className="text-xs text-gray-500 mb-2 flex items-center gap-2">
+                        <Sparkles className="w-3 h-3" />
+                        AI-suggested reply
+                      </div>
+                      <p className="text-sm text-gray-400 italic">
+                        &quot;Congrats on the launch! The persistence paid off. What was the biggest technical challenge you overcame?&quot;
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 text-sm text-gray-500">
+                  <Check className="w-4 h-4" />
+                  <span>Click to reply directly</span>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section id="pricing" className="py-20 px-6 border-t border-white/10">
+        <div className="max-w-5xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">Simple pricing</h2>
+            <p className="text-gray-400 text-lg">Start free, upgrade when you&apos;re ready</p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+            >
+              <Card className="p-8 bg-white/5 border-white/10 h-full">
+                <div className="mb-6">
+                  <h3 className="text-2xl font-semibold mb-2">Free</h3>
+                  <div className="text-4xl font-bold mb-1">$0</div>
+                  <p className="text-gray-400">Forever free</p>
+                </div>
+
+                <ul className="space-y-4 mb-8">
+                  <li className="flex items-start gap-3">
+                    <Check className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-300">1 account to monitor</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <Check className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-300">AI-drafted replies</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <Check className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-300">Daily email digest</span>
+                  </li>
+                </ul>
+
+                <a href="/signup">
+                  <Button variant="outline" className="w-full border-white/10 hover:bg-white/5">
+                    Get Started
+                  </Button>
+                </a>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+            >
+              <Card className="p-8 bg-white text-black h-full relative overflow-hidden">
+                <div className="absolute top-4 right-4">
+                  <div className="px-3 py-1 bg-black/10 rounded-full text-xs font-medium">
+                    POPULAR
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <h3 className="text-2xl font-semibold mb-2">Pro</h3>
+                  <div className="flex items-baseline gap-2 mb-1">
+                    <span className="text-4xl font-bold">$29</span>
+                    <span className="text-gray-600">/month</span>
+                  </div>
+                  <p className="text-gray-600">Everything you need to grow</p>
+                </div>
+
+                <ul className="space-y-4 mb-8">
+                  <li className="flex items-start gap-3">
+                    <Check className="w-5 h-5 text-black mt-0.5 flex-shrink-0" />
+                    <span>10 accounts to monitor</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <Check className="w-5 h-5 text-black mt-0.5 flex-shrink-0" />
+                    <span>AI replies in your voice</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <Check className="w-5 h-5 text-black mt-0.5 flex-shrink-0" />
+                    <span>Skip political content filter</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <Check className="w-5 h-5 text-black mt-0.5 flex-shrink-0" />
+                    <span>Priority support</span>
+                  </li>
+                </ul>
+
+                <Button
+                  onClick={handleProCheckout}
+                  disabled={loading}
+                  className="w-full bg-black text-white hover:bg-black/90 gap-2"
+                >
+                  {loading ? 'Loading...' : 'Start Pro'}
+                  {!loading && <ArrowRight className="w-4 h-4" />}
+                </Button>
+              </Card>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-20 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">
+              Stop scrolling.
+              <br />
+              Start growing.
+            </h2>
+            <p className="text-xl text-gray-400 mb-10">
+              Join creators who&apos;ve reclaimed their time and grown their audience.
+            </p>
+
+            <a href="/signup">
+              <Button className="bg-white text-black hover:bg-gray-200 gap-2 px-8 py-6 text-lg">
+                Get started for free
+                <ArrowRight className="w-5 h-5" />
+              </Button>
+            </a>
+          </motion.div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="px-6 py-8 border-t">
-        <div className="max-w-4xl mx-auto text-center text-gray-500 text-sm">
-          XeroScroll
+      <footer className="border-t border-white/10 py-12 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="flex items-center gap-2">
+              <Zap className="w-5 h-5" />
+              <span className="font-semibold">XeroScroll</span>
+            </div>
+
+            <div className="flex gap-8 text-sm text-gray-400">
+              <a href="/faq" className="hover:text-white transition-colors">FAQ</a>
+              <a href="mailto:josh@xeroscroll.com" className="hover:text-white transition-colors">Contact</a>
+            </div>
+
+            <div className="text-sm text-gray-500">
+              © 2025 XeroScroll
+            </div>
+          </div>
         </div>
       </footer>
-    </main>
+    </div>
   );
 }

@@ -54,10 +54,74 @@ export async function GET() {
       )
     `;
 
+    // Add skip_political column if it doesn't exist
+    await sql`
+      ALTER TABLE user_profiles
+      ADD COLUMN IF NOT EXISTS skip_political BOOLEAN DEFAULT true
+    `;
+
+    // Add plan column if it doesn't exist (default to 'pro' for existing users)
+    await sql`
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS plan VARCHAR(20) DEFAULT 'pro'
+    `;
+
+    // Add delivery_hour_utc column (default 16 = 6am HST = 4pm UTC)
+    await sql`
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS delivery_hour_utc INTEGER DEFAULT 16
+    `;
+
+    // Add google_id column for Google OAuth
+    await sql`
+      ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS google_id VARCHAR(255)
+    `;
+
+    // Create index for google_id lookups
+    await sql`CREATE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id)`;
+
+    // Magic links for passwordless auth
+    await sql`
+      CREATE TABLE IF NOT EXISTS magic_links (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        token VARCHAR(255) UNIQUE NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        used BOOLEAN DEFAULT false,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `;
+
+    // Sessions for authenticated users
+    await sql`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        token VARCHAR(255) UNIQUE NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `;
+
+    // Rate limiting table
+    await sql`
+      CREATE TABLE IF NOT EXISTS rate_limits (
+        id SERIAL PRIMARY KEY,
+        key VARCHAR(255) NOT NULL,
+        count INTEGER DEFAULT 1,
+        window_start TIMESTAMP DEFAULT NOW(),
+        UNIQUE(key)
+      )
+    `;
+
     // Create indexes
     await sql`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_users_stripe_customer ON users(stripe_customer_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_monitored_accounts_user ON monitored_accounts(user_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_magic_links_token ON magic_links(token)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_rate_limits_key ON rate_limits(key)`;
 
     return NextResponse.json({
       success: true,

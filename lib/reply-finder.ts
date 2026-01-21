@@ -3,8 +3,29 @@ import { MonitoredAccount, UserProfile } from './db';
 import { ReplyOpportunity } from './email';
 import { generateReply, UserContext, TweetContext } from './claude';
 
-function isQualityTweet(tweet: Tweet): boolean {
+const POLITICAL_KEYWORDS = [
+  'trump', 'biden', 'democrat', 'republican', 'gop', 'maga',
+  'congress', 'senate', 'election', 'vote', 'voting', 'ballot',
+  'liberal', 'conservative', 'left-wing', 'right-wing', 'leftist', 'rightist',
+  'politician', 'political', 'politics', 'govt', 'government',
+  'immigration', 'border wall', 'abortion', 'pro-life', 'pro-choice',
+  'gun control', 'second amendment', '2nd amendment',
+  'socialism', 'communism', 'fascism', 'marxist',
+  'antifa', 'blm', 'woke', 'wokeism',
+  'capitol', 'insurrection', 'impeach',
+  'elon musk', 'doge', 'musk',
+];
+
+function isPolitical(text: string): boolean {
+  const lower = text.toLowerCase();
+  return POLITICAL_KEYWORDS.some(keyword => lower.includes(keyword));
+}
+
+function isQualityTweet(tweet: Tweet, skipPolitical: boolean = true): boolean {
   const text = tweet.text.trim();
+
+  // Skip political content if enabled
+  if (skipPolitical && isPolitical(text)) return false;
 
   // Skip very short tweets (under 50 chars of actual content)
   const textWithoutLinks = text.replace(/https?:\/\/\S+/g, '').trim();
@@ -49,7 +70,8 @@ function scoreTweet(tweet: Tweet): number {
 export async function findOpportunities(
   accounts: MonitoredAccount[],
   userProfile: UserProfile | null,
-  maxPerAccount: number = 10
+  maxPerAccount: number = 10,
+  skipPolitical: boolean = true
 ): Promise<ReplyOpportunity[]> {
   const allOpportunities: (ReplyOpportunity & { score: number; tweet: Tweet })[] = [];
 
@@ -63,7 +85,7 @@ export async function findOpportunities(
 
     for (const tweet of tweets) {
       if (!isRecent(tweet, 24)) continue;
-      if (!isQualityTweet(tweet)) continue;
+      if (!isQualityTweet(tweet, skipPolitical)) continue;
 
       const opportunity: ReplyOpportunity & { score: number; tweet: Tweet } = {
         author: tweet.author.userName,

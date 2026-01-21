@@ -1,73 +1,90 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getActiveUsers, getMonitoredAccounts, getUserProfile, logEmail } from '../../../../lib/db';
+import { inngest } from '../../../../lib/inngest';
+import { getUserByEmail, getMonitoredAccounts, getUserProfile, logEmail } from '../../../../lib/db';
 import { findOpportunities } from '../../../../lib/reply-finder';
 import { sendDigestEmail } from '../../../../lib/email';
+import { requireAuth, checkRateLimit, getClientIP } from '../../../../lib/auth';
 
 export const maxDuration = 300; // 5 minutes for Vercel Pro
 
 export async function GET(request: NextRequest) {
-  // Optional: filter to specific user for testing
   const testEmail = request.nextUrl.searchParams.get('email');
+  const cronSecret = request.nextUrl.searchParams.get('secret');
 
   try {
-    // Get all active users
-    let users = await getActiveUsers();
-
-    // Filter if testing specific user
+    // If testing a specific user (from dashboard), require authentication
     if (testEmail) {
-      users = users.filter((u) => u.email === testEmail);
-    }
+      // Require auth for test digests
+      const session = await requireAuth(request);
 
-    console.log(`Processing ${users.length} users`);
+      // Only allow testing your own digest
+      if (session.email.toLowerCase() !== testEmail.toLowerCase()) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+      }
 
-    const results = [];
+      // Rate limit: 5 test digests per hour
+      const ip = getClientIP(request);
+      const limit = await checkRateLimit(`test-digest:${ip}`, 5, 3600);
+      if (!limit.allowed) {
+        return NextResponse.json({ error: 'Too many test digests. Try again later.' }, { status: 429 });
+      }
+      const user = await getUserByEmail(testEmail);
+      if (!user) {
+        return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      }
 
-    for (const user of users) {
-      try {
-        // Get user's monitored accounts
-        const accounts = await getMonitoredAccounts(user.id);
+      const accounts = await getMonitoredAccounts(user.id);
+      if (accounts.length === 0) {
+        return NextResponse.json({ error: 'No monitored accounts' }, { status: 400 });
+      }
 
-        if (accounts.length === 0) {
-          console.log(`User ${user.email} has no monitored accounts, skipping`);
-          continue;
-        }
+      const userProfile = await getUserProfile(user.id);
+      const skipPolitical = userProfile?.skip_political ?? true;
 
-        // Get user profile for AI reply generation
-        const userProfile = await getUserProfile(user.id);
+      console.log(`Test digest for ${testEmail} (${accounts.length} accounts)`);
 
-        console.log(`Finding opportunities for ${user.email} (${accounts.length} accounts, profile: ${userProfile ? 'yes' : 'no'})`);
+      const opportunities = await findOpportunities(accounts, userProfile, 10, skipPolitical);
 
-        // Find opportunities and generate replies
-        const opportunities = await findOpportunities(accounts, userProfile);
+      if (opportunities.length === 0) {
+        await logEmail(user.id, 0, 'no_opportunities');
+        return NextResponse.json({ error: 'No opportunities found' }, { status: 200 });
+      }
 
-        if (opportunities.length === 0) {
-          console.log(`No opportunities found for ${user.email}`);
-          await logEmail(user.id, 0, 'no_opportunities');
-          continue;
-        }
+      const { success, error } = await sendDigestEmail(user.email, opportunities);
 
-        // Send email
-        const { success, error } = await sendDigestEmail(user.email, opportunities);
-
-        if (success) {
-          await logEmail(user.id, opportunities.length, 'sent');
-          results.push({ email: user.email, opportunities: opportunities.length, status: 'sent' });
-          console.log(`Sent digest to ${user.email} with ${opportunities.length} opportunities`);
-        } else {
-          await logEmail(user.id, opportunities.length, 'failed');
-          results.push({ email: user.email, status: 'failed', error });
-          console.error(`Failed to send to ${user.email}: ${error}`);
-        }
-      } catch (err) {
-        console.error(`Error processing user ${user.email}:`, err);
-        results.push({ email: user.email, status: 'error', error: String(err) });
+      if (success) {
+        await logEmail(user.id, opportunities.length, 'sent');
+        return NextResponse.json({ success: true, opportunities: opportunities.length });
+      } else {
+        await logEmail(user.id, opportunities.length, 'failed');
+        return NextResponse.json({ error: `Failed to send: ${error}` }, { status: 500 });
       }
     }
 
+    // For the hourly cron (no email param), verify cron secret
+    // Vercel Cron automatically sends CRON_SECRET in the Authorization header
+    const authHeader = request.headers.get('Authorization');
+    const expectedSecret = process.env.CRON_SECRET;
+
+    // Allow if: valid CRON_SECRET in query param OR Authorization header matches
+    const isAuthorized =
+      (expectedSecret && cronSecret === expectedSecret) ||
+      (expectedSecret && authHeader === `Bearer ${expectedSecret}`);
+
+    if (!isAuthorized) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const currentHourUtc = new Date().getUTCHours();
+
+    await inngest.send({
+      name: 'digest/trigger-all',
+      data: { hourUtc: currentHourUtc },
+    });
+
     return NextResponse.json({
       success: true,
-      processed: users.length,
-      results,
+      message: `Triggered digest processing for users scheduled at UTC hour ${currentHourUtc}`,
     });
   } catch (err) {
     console.error('Cron error:', err);
