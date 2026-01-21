@@ -6,7 +6,7 @@ Micro-SaaS that sends X/Twitter creators daily email digests of reply opportunit
 
 - $29/mo subscription via Stripe
 - Users submit up to 10 accounts to monitor
-- Daily email digest with top reply opportunities + suggested angles
+- Daily email digest with top reply opportunities + **AI-written draft replies**
 
 ## Tech Stack
 
@@ -15,8 +15,9 @@ Micro-SaaS that sends X/Twitter creators daily email digests of reply opportunit
 - **Payments:** Stripe (subscriptions)
 - **Email:** Resend
 - **Twitter Data:** TwitterAPI.io (~$0.15/1000 tweets)
+- **AI Replies:** Claude API (Anthropic)
 - **Hosting:** Vercel
-- **Cron:** Vercel Cron or GitHub Actions
+- **Cron:** Vercel Cron (6am HST daily)
 
 ## Environment Variables
 
@@ -35,6 +36,9 @@ STRIPE_PRICE_ID=           # Your $29/mo price ID
 
 # TwitterAPI.io
 TWITTER_API_KEY=
+
+# Anthropic (Claude API for AI replies)
+ANTHROPIC_API_KEY=
 
 # Resend
 RESEND_API_KEY=
@@ -76,6 +80,19 @@ CREATE TABLE email_log (
   opportunities_count INTEGER,
   status VARCHAR(50)
 );
+
+-- User profiles (for AI reply generation)
+CREATE TABLE user_profiles (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE UNIQUE,
+  display_name VARCHAR(255),
+  bio TEXT,
+  expertise TEXT,
+  tone VARCHAR(100),
+  example_replies TEXT,
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
 ```
 
 Initialize DB: `GET /api/db/init`
@@ -102,10 +119,12 @@ curl "http://localhost:3000/api/cron?email=test@example.com"
 2. Clicks "Subscribe" -> Stripe Checkout ($29/mo)
 3. Stripe webhook creates user in DB
 4. User redirected to /success with onboarding form
-5. User submits 10 accounts to monitor
-6. Daily cron runs at 6am HST:
+5. User fills out profile (name, bio, expertise, tone, example replies)
+6. User submits up to 10 accounts to monitor
+7. Daily cron runs at 6am HST:
    - Fetch tweets from each user's monitored accounts
-   - Score and rank reply opportunities
+   - Score and rank top 10 reply opportunities
+   - Generate AI draft replies using user's profile/voice
    - Send email digest via Resend
 
 ## API Routes
@@ -113,7 +132,7 @@ curl "http://localhost:3000/api/cron?email=test@example.com"
 | Route | Method | Purpose |
 |-------|--------|---------|
 | `/api/webhook` | POST | Stripe webhook (subscription events) |
-| `/api/onboard` | POST | Save user's monitored accounts |
+| `/api/onboard` | POST | Save user's profile and monitored accounts |
 | `/api/cron` | GET | Trigger daily digest (called by Vercel Cron) |
 | `/api/db/init` | GET | Initialize database tables |
 
@@ -130,12 +149,13 @@ Margin: ~98%
 ## Files
 
 - `src/app/page.tsx` - Landing page
-- `src/app/success/page.tsx` - Post-checkout onboarding
+- `src/app/success/page.tsx` - Post-checkout onboarding + profile form
 - `src/app/api/webhook/route.ts` - Stripe webhook handler
-- `src/app/api/onboard/route.ts` - Save monitored accounts
+- `src/app/api/onboard/route.ts` - Save profile and monitored accounts
 - `src/app/api/cron/route.ts` - Daily digest sender
-- `lib/db.ts` - Database connection
+- `lib/db.ts` - Database connection and queries
 - `lib/stripe.ts` - Stripe client
 - `lib/twitter.ts` - TwitterAPI.io client
 - `lib/email.ts` - Resend email client
-- `lib/reply-finder.ts` - Core opportunity scoring logic
+- `lib/claude.ts` - Anthropic Claude API for AI replies
+- `lib/reply-finder.ts` - Core opportunity scoring + reply generation
