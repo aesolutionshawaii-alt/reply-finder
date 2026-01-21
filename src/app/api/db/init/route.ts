@@ -2,6 +2,21 @@ import { NextResponse } from 'next/server';
 import { getDb } from '../../../../../lib/db';
 
 export async function GET() {
+  // Debug: check if env var exists
+  const hasPostgresUrl = !!process.env.POSTGRES_URL;
+  const hasDatabaseUrl = !!process.env.DATABASE_URL;
+
+  if (!hasPostgresUrl && !hasDatabaseUrl) {
+    return NextResponse.json({
+      error: 'No database URL found',
+      debug: {
+        POSTGRES_URL: hasPostgresUrl,
+        DATABASE_URL: hasDatabaseUrl,
+        availableEnvKeys: Object.keys(process.env).filter(k => k.includes('PG') || k.includes('POSTGRES') || k.includes('DATABASE'))
+      }
+    }, { status: 500 });
+  }
+
   try {
     const sql = getDb();
 
