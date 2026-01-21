@@ -52,7 +52,7 @@ export default function SignupPage() {
         </nav>
 
         <section className="pt-32 pb-20 px-6">
-          <div className="max-w-md mx-auto">
+          <div className="max-w-lg mx-auto">
             <Card className="p-8 md:p-12 bg-white/5 border-white/10 text-center">
               <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-6">
                 <Mail className="w-8 h-8 text-green-400" />
@@ -94,15 +94,15 @@ export default function SignupPage() {
       </nav>
 
       <section className="pt-32 pb-20 px-6">
-        <div className="max-w-md mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4">Get started free</h1>
-            <p className="text-gray-400 text-lg">
+        <div className="max-w-lg mx-auto">
+          <div className="text-center mb-10">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">Get started free</h1>
+            <p className="text-gray-400 text-lg leading-relaxed">
               Monitor 1 account and get daily reply opportunities.
             </p>
           </div>
 
-          <Card className="p-8 bg-white/5 border-white/10">
+          <Card className="p-8 md:p-10 bg-white/5 border-white/10">
             <a
               href="/api/auth/google"
               className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white text-black rounded-lg font-medium hover:bg-gray-200 transition-colors"

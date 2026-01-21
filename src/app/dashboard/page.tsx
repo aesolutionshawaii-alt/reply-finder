@@ -116,7 +116,7 @@ function Sidebar({
   ];
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-[#0a0a0a] border-r border-white/10 flex flex-col">
+    <aside className="fixed left-0 top-0 h-screen w-64 bg-white/5 border-r border-white/10 flex flex-col">
       {/* Logo */}
       <div className="p-4 border-b border-white/10">
         <a href="/" className="flex items-center gap-2">
@@ -485,7 +485,7 @@ function DashboardContent() {
         </nav>
 
         <section className="pt-32 pb-20 px-6">
-          <div className="max-w-md mx-auto">
+          <div className="max-w-lg mx-auto">
             <Card className="p-8 md:p-12 bg-white/5 border-white/10 text-center">
               <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-6">
                 <Mail className="w-8 h-8 text-green-400" />
@@ -529,15 +529,15 @@ function DashboardContent() {
         </nav>
 
         <section className="pt-32 pb-20 px-6">
-          <div className="max-w-md mx-auto">
-            <div className="text-center mb-8">
-              <h1 className="text-4xl md:text-5xl font-bold mb-4">Welcome back</h1>
-              <p className="text-gray-400 text-lg">
+          <div className="max-w-lg mx-auto">
+            <div className="text-center mb-10">
+              <h1 className="text-4xl md:text-5xl font-bold mb-4 tracking-tight">Welcome back</h1>
+              <p className="text-gray-400 text-lg leading-relaxed">
                 Sign in to your XeroScroll account.
               </p>
             </div>
 
-            <Card className="p-8 bg-white/5 border-white/10">
+            <Card className="p-8 md:p-10 bg-white/5 border-white/10">
               <a
                 href="/api/auth/google"
                 className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white text-black rounded-lg font-medium hover:bg-gray-200 transition-colors"
@@ -659,7 +659,7 @@ function DashboardContent() {
                 description="Add X accounts you want to monitor for reply opportunities."
               />
 
-              <Card className="bg-[#0a0a0a] border-white/10 p-6">
+              <Card className="bg-white/5 border-white/10 p-6">
                 <textarea
                   value={accounts}
                   onChange={(e) => setAccounts(e.target.value)}
@@ -694,7 +694,7 @@ function DashboardContent() {
                 description="Tell us about yourself so the AI can write replies in your voice."
               />
 
-              <Card className="bg-[#0a0a0a] border-white/10 p-6">
+              <Card className="bg-white/5 border-white/10 p-6">
                 <div className="space-y-5">
                   <div>
                     <label className="block text-sm font-medium mb-2 text-gray-300">Name</label>
@@ -784,7 +784,7 @@ function DashboardContent() {
                 description="Choose when you want to receive your daily digest."
               />
 
-              <Card className="bg-[#0a0a0a] border-white/10 p-6">
+              <Card className="bg-white/5 border-white/10 p-6">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center flex-shrink-0">
                     <Clock className="w-5 h-5 text-purple-400" />
@@ -846,7 +846,7 @@ function DashboardContent() {
                 description="Send yourself a test email to see what your daily digest looks like."
               />
 
-              <Card className="bg-[#0a0a0a] border-white/10 p-6">
+              <Card className="bg-white/5 border-white/10 p-6">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
                     <Send className="w-5 h-5 text-blue-400" />
@@ -867,7 +867,7 @@ function DashboardContent() {
                 </div>
               </Card>
 
-              <Card className="bg-[#0a0a0a] border-white/10 p-6 mt-4">
+              <Card className="bg-white/5 border-white/10 p-6 mt-4">
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
                     <ExternalLink className="w-5 h-5 text-gray-400" />
