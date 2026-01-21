@@ -39,22 +39,21 @@ export async function generateReply(
 
 About ${user.displayName}:
 - Bio: ${user.bio}
-- Expertise: ${user.expertise}
 - Tone: ${user.tone}
-
-Examples of their past replies (match this voice):
-${user.exampleReplies}
 
 Tweet to reply to:
 @${tweet.authorHandle} (${tweet.authorName}) wrote:
 "${tweet.text}"
-(${tweet.likes} likes, ${tweet.retweets} retweets)
 
 Write a single reply tweet (max 280 chars) that:
-1. Matches ${user.displayName}'s voice and tone exactly
-2. Adds genuine value or insight from their expertise
-3. Feels natural, not salesy or try-hard
-4. Could spark a conversation
+1. Responds naturally to what they actually said
+2. Matches ${user.displayName}'s tone: ${user.tone}
+3. Does NOT force in ${user.displayName}'s job or expertise unless it's genuinely relevant
+4. Just be a real person having a conversation
+5. Could be agreement, a question, a take, humor - whatever fits
+
+Bad: "As a marketing professional, I think..." (forced)
+Good: "This happened to me last week..." (natural)
 
 Reply only with the tweet text, no quotes, no explanation.`;
 
