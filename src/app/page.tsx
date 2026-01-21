@@ -107,7 +107,7 @@ export default function Home() {
               filter through noise, and hope you catch something good.
             </p>
             <p>
-              Reply Finder does the scrolling for you. Every morning, you get an email with
+              XeroScroll does the scrolling for you. Every morning, you get an email with
               the best opportunities from the accounts that matter to you.
             </p>
           </div>
@@ -172,7 +172,7 @@ export default function Home() {
       {/* Footer */}
       <footer className="px-6 py-8 border-t">
         <div className="max-w-4xl mx-auto text-center text-gray-500 text-sm">
-          Reply Finder
+          XeroScroll
         </div>
       </footer>
     </main>

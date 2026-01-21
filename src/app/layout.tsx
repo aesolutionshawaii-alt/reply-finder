@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Reply Finder - Daily X Reply Opportunities',
+  title: 'XeroScroll - Daily X Reply Opportunities',
   description: 'Get daily email digests of the best reply opportunities from accounts you monitor on X.',
 };
 

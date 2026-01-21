@@ -28,7 +28,7 @@ function Nav({ email, onLogout }: { email: string; onLogout: () => void }) {
     <nav className="sticky top-0 z-50 bg-white border-b border-gray-200">
       <div className="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
         <div className="flex items-center gap-6">
-          <a href="/" className="font-bold text-xl">Reply Guy</a>
+          <a href="/" className="font-bold text-xl">XeroScroll</a>
           <a href="/dashboard" className="text-gray-600 hover:text-black">Dashboard</a>
         </div>
         <div className="flex items-center gap-4">
@@ -199,7 +199,7 @@ export default function DashboardPage() {
     return (
       <main className="min-h-screen flex items-center justify-center px-6 bg-gray-50">
         <div className="max-w-md w-full bg-white p-8 rounded-xl shadow-sm">
-          <h1 className="text-2xl font-bold mb-2">Reply Guy Dashboard</h1>
+          <h1 className="text-2xl font-bold mb-2">XeroScroll Dashboard</h1>
           <p className="text-gray-600 mb-6">Enter your email to access your settings.</p>
 
           <form onSubmit={handleLogin}>

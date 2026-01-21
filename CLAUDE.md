@@ -1,4 +1,4 @@
-# Reply Finder
+# XeroScroll
 
 Micro-SaaS that sends X/Twitter creators daily email digests of reply opportunities from accounts they monitor.
 

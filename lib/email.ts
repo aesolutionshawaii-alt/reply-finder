@@ -74,7 +74,7 @@ export async function sendDigestEmail(
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 32px 0;">
 
         <p style="font-size: 14px; color: #6b7280;">
-          You're receiving this because you subscribed to Reply Finder.
+          You're receiving this because you subscribed to XeroScroll.
           <a href="${process.env.NEXT_PUBLIC_APP_URL}/unsubscribe" style="color: #6b7280;">Unsubscribe</a>
         </p>
       </body>
@@ -83,7 +83,7 @@ export async function sendDigestEmail(
 
   try {
     await resend.emails.send({
-      from: 'Reply Finder <onboarding@resend.dev>',
+      from: 'XeroScroll <onboarding@resend.dev>',
       to,
       subject: `${opportunities.length} reply opportunities for today`,
       html,
