@@ -1,6 +1,56 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+
+function Nav({ email, onLogout }: { email: string; onLogout: () => void }) {
+  const [loading, setLoading] = useState(false);
+
+  const handleManageSubscription = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/billing/portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error('Failed to open billing portal:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <nav className="sticky top-0 z-50 bg-white border-b border-gray-200">
+      <div className="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
+        <div className="flex items-center gap-6">
+          <a href="/" className="font-bold text-xl">Reply Guy</a>
+          <a href="/dashboard" className="text-gray-600 hover:text-black">Dashboard</a>
+        </div>
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleManageSubscription}
+            disabled={loading}
+            className="text-gray-600 hover:text-black text-sm"
+          >
+            {loading ? 'Loading...' : 'Manage Subscription'}
+          </button>
+          <span className="text-gray-400 text-sm">{email}</span>
+          <button
+            onClick={onLogout}
+            className="text-gray-500 hover:text-gray-700 text-sm"
+          >
+            Logout
+          </button>
+        </div>
+      </div>
+    </nav>
+  );
+}
 
 interface UserData {
   email: string;
@@ -178,20 +228,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 py-12 px-6">
-      <div className="max-w-2xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-2xl font-bold">Reply Guy Dashboard</h1>
-            <p className="text-gray-600">{email}</p>
-          </div>
-          <button
-            onClick={() => setIsLoggedIn(false)}
-            className="text-gray-500 hover:text-gray-700"
-          >
-            Logout
-          </button>
-        </div>
+    <div className="min-h-screen bg-gray-50">
+      <Nav email={email} onLogout={() => setIsLoggedIn(false)} />
+      <main className="py-12 px-6">
+        <div className="max-w-2xl mx-auto">
 
         {error && (
           <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg mb-6">{error}</div>
@@ -307,5 +347,6 @@ export default function DashboardPage() {
         </div>
       </div>
     </main>
+    </div>
   );
 }
