@@ -3,6 +3,27 @@ import { MonitoredAccount, UserProfile } from './db';
 import { ReplyOpportunity } from './email';
 import { generateReply, UserContext, TweetContext } from './claude';
 
+function isQualityTweet(tweet: Tweet): boolean {
+  const text = tweet.text.trim();
+
+  // Skip very short tweets (under 50 chars of actual content)
+  const textWithoutLinks = text.replace(/https?:\/\/\S+/g, '').trim();
+  if (textWithoutLinks.length < 50) return false;
+
+  // Skip replies to others (starts with @mention)
+  if (text.startsWith('@')) return false;
+
+  // Skip retweets
+  if (text.startsWith('RT @')) return false;
+
+  // Skip tweets that are mostly hashtags
+  const hashtagCount = (text.match(/#\w+/g) || []).length;
+  const words = text.split(/\s+/).length;
+  if (hashtagCount > words / 2) return false;
+
+  return true;
+}
+
 function scoreTweet(tweet: Tweet): number {
   let score = 0;
 
@@ -42,6 +63,7 @@ export async function findOpportunities(
 
     for (const tweet of tweets) {
       if (!isRecent(tweet, 24)) continue;
+      if (!isQualityTweet(tweet)) continue;
 
       const opportunity: ReplyOpportunity & { score: number; tweet: Tweet } = {
         author: tweet.author.userName,
