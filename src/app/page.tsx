@@ -59,7 +59,7 @@ export default function Home() {
               <span className="text-sm text-gray-300">AI-powered growth without the scroll</span>
             </div>
 
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 tracking-tight">
+            <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold mb-6 tracking-tight">
               Grow on X
               <br />
               <span className="text-gray-500">without scrolling</span>
