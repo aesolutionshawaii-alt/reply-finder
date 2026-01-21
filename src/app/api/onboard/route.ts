@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserByEmail, saveMonitoredAccounts } from '../../../../lib/db';
+import { getUserByEmail, saveMonitoredAccounts, saveUserProfile } from '../../../../lib/db';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, accounts } = body;
+    const { email, accounts, profile } = body;
 
     if (!email || !accounts || !Array.isArray(accounts)) {
       return NextResponse.json(
@@ -48,9 +48,20 @@ export async function POST(request: NextRequest) {
     // Save accounts
     await saveMonitoredAccounts(user.id, cleanedAccounts);
 
+    // Save profile if provided
+    if (profile) {
+      await saveUserProfile(user.id, {
+        displayName: profile.displayName,
+        bio: profile.bio,
+        expertise: profile.expertise,
+        tone: profile.tone,
+        exampleReplies: profile.exampleReplies,
+      });
+    }
+
     return NextResponse.json({
       success: true,
-      message: `Saved ${cleanedAccounts.length} accounts`,
+      message: `Saved ${cleanedAccounts.length} accounts and profile`,
       accounts: cleanedAccounts.map((a) => a.handle),
     });
   } catch (err) {

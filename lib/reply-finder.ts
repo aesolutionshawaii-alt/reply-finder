@@ -1,90 +1,7 @@
 import { Tweet, fetchAccountTweets, isRecent } from './twitter';
-import { MonitoredAccount } from './db';
+import { MonitoredAccount, UserProfile } from './db';
 import { ReplyOpportunity } from './email';
-
-interface ReplyAngle {
-  type: string;
-  suggestion: string;
-}
-
-function suggestReplyAngles(tweet: Tweet): ReplyAngle[] {
-  const angles: ReplyAngle[] = [];
-  const text = tweet.text.toLowerCase();
-
-  // Question tweets - great for replies
-  if (text.includes('?')) {
-    angles.push({
-      type: 'answer',
-      suggestion: 'Answer the question with your experience or perspective',
-    });
-  }
-
-  // Opinion/hot take tweets
-  if (text.includes('unpopular opinion') || text.includes('hot take') || text.includes('controversial')) {
-    angles.push({
-      type: 'agree-or-counter',
-      suggestion: 'Share your take - agree with nuance or offer a respectful counter',
-    });
-  }
-
-  // Thread starters
-  if (text.includes('thread') || text.includes('🧵') || text.includes('1/')) {
-    angles.push({
-      type: 'thread-engage',
-      suggestion: 'Add to the thread with your own insight or example',
-    });
-  }
-
-  // Advice/tips content
-  if (text.includes('tip') || text.includes('advice') || text.includes('lesson') || text.includes('learned')) {
-    angles.push({
-      type: 'add-value',
-      suggestion: 'Add another tip or share how you applied this',
-    });
-  }
-
-  // Wins/milestones
-  if (text.includes('milestone') || text.includes('hit') || text.includes('reached') || text.includes('finally')) {
-    angles.push({
-      type: 'celebrate',
-      suggestion: 'Genuine congratulations + ask a follow-up question',
-    });
-  }
-
-  // Struggles/challenges
-  if (text.includes('struggle') || text.includes('hard') || text.includes('difficult') || text.includes('challenge')) {
-    angles.push({
-      type: 'relate',
-      suggestion: 'Share that you relate and offer encouragement or a tip',
-    });
-  }
-
-  // High engagement = reply early for visibility
-  if (tweet.likeCount > 500 || tweet.retweetCount > 100) {
-    angles.push({
-      type: 'early-reply',
-      suggestion: 'High engagement tweet - reply early for visibility',
-    });
-  }
-
-  // Large account = more visibility potential
-  if (tweet.author.followers > 50000) {
-    angles.push({
-      type: 'visibility',
-      suggestion: 'Large account - thoughtful reply could get good reach',
-    });
-  }
-
-  // Default
-  if (angles.length === 0) {
-    angles.push({
-      type: 'engage',
-      suggestion: 'Share a genuine reaction or add to the conversation',
-    });
-  }
-
-  return angles;
-}
+import { generateReply, UserContext, TweetContext } from './claude';
 
 function scoreTweet(tweet: Tweet): number {
   let score = 0;
@@ -110,9 +27,10 @@ function scoreTweet(tweet: Tweet): number {
 
 export async function findOpportunities(
   accounts: MonitoredAccount[],
+  userProfile: UserProfile | null,
   maxPerAccount: number = 10
 ): Promise<ReplyOpportunity[]> {
-  const allOpportunities: (ReplyOpportunity & { score: number })[] = [];
+  const allOpportunities: (ReplyOpportunity & { score: number; tweet: Tweet })[] = [];
 
   for (const account of accounts) {
     const { tweets, error } = await fetchAccountTweets(account.handle, maxPerAccount);
@@ -125,15 +43,15 @@ export async function findOpportunities(
     for (const tweet of tweets) {
       if (!isRecent(tweet, 24)) continue;
 
-      const opportunity: ReplyOpportunity & { score: number } = {
+      const opportunity: ReplyOpportunity & { score: number; tweet: Tweet } = {
         author: tweet.author.userName,
         authorName: tweet.author.name,
         text: tweet.text,
         url: tweet.url,
         likes: tweet.likeCount,
         retweets: tweet.retweetCount,
-        angles: suggestReplyAngles(tweet),
         score: scoreTweet(tweet),
+        tweet,
       };
 
       allOpportunities.push(opportunity);
@@ -146,6 +64,41 @@ export async function findOpportunities(
   // Sort by score descending
   allOpportunities.sort((a, b) => b.score - a.score);
 
-  // Return top 10, without the score field
-  return allOpportunities.slice(0, 10).map(({ score, ...opp }) => opp);
+  // Take top 10
+  const top10 = allOpportunities.slice(0, 10);
+
+  // Generate AI replies if user has a profile
+  if (userProfile && userProfile.bio) {
+    const userContext: UserContext = {
+      displayName: userProfile.display_name || 'User',
+      bio: userProfile.bio || '',
+      expertise: userProfile.expertise || '',
+      tone: userProfile.tone || 'friendly and helpful',
+      exampleReplies: userProfile.example_replies || '',
+    };
+
+    // Generate replies in parallel (batches of 3 to be safe with rate limits)
+    for (let i = 0; i < top10.length; i += 3) {
+      const batch = top10.slice(i, i + 3);
+      await Promise.all(
+        batch.map(async (opp) => {
+          try {
+            const tweetContext: TweetContext = {
+              authorHandle: opp.author,
+              authorName: opp.authorName,
+              text: opp.text,
+              likes: opp.likes,
+              retweets: opp.retweets,
+            };
+            opp.draftReply = await generateReply(tweetContext, userContext);
+          } catch (err) {
+            console.error(`Failed to generate reply for tweet:`, err);
+          }
+        })
+      );
+    }
+  }
+
+  // Return without score and tweet fields
+  return top10.map(({ score, tweet, ...opp }) => opp);
 }

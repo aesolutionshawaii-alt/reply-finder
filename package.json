@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
     "@neondatabase/serverless": "^0.9.0",
     "next": "^16.1.4",
     "react": "^18",

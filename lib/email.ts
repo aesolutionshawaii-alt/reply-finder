@@ -20,7 +20,7 @@ export interface ReplyOpportunity {
   url: string;
   likes: number;
   retweets: number;
-  angles: { type: string; suggestion: string }[];
+  draftReply?: string;
 }
 
 export async function sendDigestEmail(
@@ -42,14 +42,14 @@ export async function sendDigestEmail(
         <div style="font-size: 14px; color: #6b7280; margin-bottom: 12px;">
           ${opp.likes} likes · ${opp.retweets} retweets
         </div>
-        <div style="margin-bottom: 12px;">
-          <strong>Reply angles:</strong>
-          <ul style="margin: 8px 0; padding-left: 20px;">
-            ${opp.angles.map((a) => `<li><strong>${a.type}:</strong> ${a.suggestion}</li>`).join('')}
-          </ul>
+        ${opp.draftReply ? `
+        <div style="margin-bottom: 12px; padding: 12px; background: #ecfdf5; border-left: 3px solid #10b981; border-radius: 4px;">
+          <div style="font-size: 12px; font-weight: 600; color: #059669; margin-bottom: 6px;">YOUR DRAFT REPLY:</div>
+          <div style="color: #065f46; white-space: pre-wrap;">${opp.draftReply}</div>
         </div>
-        <a href="${opp.url}" style="color: #2563eb; text-decoration: none;">
-          Open on X →
+        ` : ''}
+        <a href="${opp.url}" style="display: inline-block; background: #1d9bf0; color: white; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: 500;">
+          Open & Reply →
         </a>
       </div>
     `

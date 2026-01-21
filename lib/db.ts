@@ -97,3 +97,39 @@ export async function logEmail(userId: number, opportunitiesCount: number, statu
     VALUES (${userId}, ${opportunitiesCount}, ${status})
   `;
 }
+
+export interface UserProfile {
+  id: number;
+  user_id: number;
+  display_name: string | null;
+  bio: string | null;
+  expertise: string | null;
+  tone: string | null;
+  example_replies: string | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+export async function saveUserProfile(
+  userId: number,
+  profile: { displayName?: string; bio?: string; expertise?: string; tone?: string; exampleReplies?: string }
+): Promise<void> {
+  const sql = getDb();
+  await sql`
+    INSERT INTO user_profiles (user_id, display_name, bio, expertise, tone, example_replies)
+    VALUES (${userId}, ${profile.displayName || null}, ${profile.bio || null}, ${profile.expertise || null}, ${profile.tone || null}, ${profile.exampleReplies || null})
+    ON CONFLICT (user_id) DO UPDATE SET
+      display_name = ${profile.displayName || null},
+      bio = ${profile.bio || null},
+      expertise = ${profile.expertise || null},
+      tone = ${profile.tone || null},
+      example_replies = ${profile.exampleReplies || null},
+      updated_at = NOW()
+  `;
+}
+
+export async function getUserProfile(userId: number): Promise<UserProfile | null> {
+  const sql = getDb();
+  const result = await sql`SELECT * FROM user_profiles WHERE user_id = ${userId}`;
+  return result[0] as UserProfile || null;
+}

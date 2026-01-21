@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getActiveUsers, getMonitoredAccounts, logEmail } from '../../../../lib/db';
+import { getActiveUsers, getMonitoredAccounts, getUserProfile, logEmail } from '../../../../lib/db';
 import { findOpportunities } from '../../../../lib/reply-finder';
 import { sendDigestEmail } from '../../../../lib/email';
 
@@ -32,10 +32,13 @@ export async function GET(request: NextRequest) {
           continue;
         }
 
-        console.log(`Finding opportunities for ${user.email} (${accounts.length} accounts)`);
+        // Get user profile for AI reply generation
+        const userProfile = await getUserProfile(user.id);
 
-        // Find opportunities
-        const opportunities = await findOpportunities(accounts);
+        console.log(`Finding opportunities for ${user.email} (${accounts.length} accounts, profile: ${userProfile ? 'yes' : 'no'})`);
+
+        // Find opportunities and generate replies
+        const opportunities = await findOpportunities(accounts, userProfile);
 
         if (opportunities.length === 0) {
           console.log(`No opportunities found for ${user.email}`);

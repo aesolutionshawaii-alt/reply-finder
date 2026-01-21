@@ -8,6 +8,11 @@ function SuccessContent() {
   const sessionId = searchParams.get('session_id');
 
   const [email, setEmail] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [bio, setBio] = useState('');
+  const [expertise, setExpertise] = useState('');
+  const [tone, setTone] = useState('');
+  const [exampleReplies, setExampleReplies] = useState('');
   const [accounts, setAccounts] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -35,7 +40,17 @@ function SuccessContent() {
       const response = await fetch('/api/onboard', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, accounts: accountList }),
+        body: JSON.stringify({
+          email,
+          accounts: accountList,
+          profile: {
+            displayName,
+            bio,
+            expertise,
+            tone,
+            exampleReplies,
+          },
+        }),
       });
 
       const data = await response.json();
@@ -102,9 +117,92 @@ function SuccessContent() {
             </p>
           </div>
 
+          <hr className="my-6" />
+          <h2 className="text-lg font-semibold">Your profile (for AI-written replies)</h2>
+
+          <div>
+            <label htmlFor="displayName" className="block text-sm font-medium mb-2">
+              Your name
+            </label>
+            <input
+              type="text"
+              id="displayName"
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="Josh"
+              required
+              className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="bio" className="block text-sm font-medium mb-2">
+              What do you do? (1-2 sentences)
+            </label>
+            <textarea
+              id="bio"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="I run a tech consulting company in Hawaii. We help local businesses with AI and automation."
+              rows={2}
+              required
+              className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="expertise" className="block text-sm font-medium mb-2">
+              Your expertise/topics
+            </label>
+            <input
+              type="text"
+              id="expertise"
+              value={expertise}
+              onChange={(e) => setExpertise(e.target.value)}
+              placeholder="AI, automation, small business, Hawaii"
+              required
+              className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="tone" className="block text-sm font-medium mb-2">
+              Your tone/style
+            </label>
+            <input
+              type="text"
+              id="tone"
+              value={tone}
+              onChange={(e) => setTone(e.target.value)}
+              placeholder="friendly, casual, helpful - not salesy"
+              required
+              className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="exampleReplies" className="block text-sm font-medium mb-2">
+              Paste 2-3 of your best past replies
+            </label>
+            <textarea
+              id="exampleReplies"
+              value={exampleReplies}
+              onChange={(e) => setExampleReplies(e.target.value)}
+              placeholder="This was huge for us too. We started using Claude for customer support scripts and it cut response time in half.&#10;&#10;Totally agree. The ROI on automation for small teams is insane once you get past the learning curve."
+              rows={5}
+              className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              This helps the AI match your voice. Optional but recommended.
+            </p>
+          </div>
+
+          <hr className="my-6" />
+          <h2 className="text-lg font-semibold">Accounts to monitor</h2>
+
           <div>
             <label htmlFor="accounts" className="block text-sm font-medium mb-2">
-              Accounts to monitor (up to 10)
+              X accounts (up to 10)
             </label>
             <textarea
               id="accounts"
