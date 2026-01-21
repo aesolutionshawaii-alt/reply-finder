@@ -1,7 +1,7 @@
 import { neon } from '@neondatabase/serverless';
 
 export function getDb() {
-  const connectionString = process.env.POSTGRES_URL;
+  const connectionString = process.env.POSTGRES_URL || process.env.DATABASE_URL;
   if (!connectionString) {
     throw new Error('POSTGRES_URL not configured');
   }
