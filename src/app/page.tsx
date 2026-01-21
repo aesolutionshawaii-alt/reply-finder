@@ -7,35 +7,7 @@ import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
 
 export default function Home() {
-  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
-
-  const handleFreeSignup = async () => {
-    if (!email) {
-      // Focus the email input if empty
-      document.querySelector<HTMLInputElement>('input[type="email"]')?.focus();
-      return;
-    }
-    setLoading(true);
-    try {
-      const res = await fetch('/api/signup/free', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        localStorage.setItem('xeroscroll_email', email);
-        window.location.href = `/dashboard?email=${encodeURIComponent(email)}`;
-      } else {
-        alert(data.error || 'Something went wrong');
-      }
-    } catch {
-      alert('Something went wrong');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleProCheckout = async () => {
     setLoading(true);
@@ -99,23 +71,12 @@ export default function Home() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <div className="flex gap-2 w-full sm:w-auto">
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 flex-1 sm:w-64"
-                />
-                <Button
-                  onClick={handleFreeSignup}
-                  disabled={loading}
-                  className="bg-white text-black hover:bg-gray-200 gap-2"
-                >
-                  {loading ? 'Loading...' : 'Start Free'}
-                  {!loading && <ArrowRight className="w-4 h-4" />}
+              <a href="/signup">
+                <Button className="bg-white text-black hover:bg-gray-200 gap-2 px-8 py-6 text-lg">
+                  Sign up Free
+                  <ArrowRight className="w-5 h-5" />
                 </Button>
-              </div>
+              </a>
             </div>
             <p className="text-sm text-gray-500 mt-4">Free tier available. No credit card required.</p>
           </motion.div>
