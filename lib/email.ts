@@ -83,7 +83,7 @@ export async function sendDigestEmail(
 
   try {
     await resend.emails.send({
-      from: 'Reply Finder <digest@replyfinder.io>',
+      from: 'Reply Finder <onboarding@resend.dev>',
       to,
       subject: `${opportunities.length} reply opportunities for today`,
       html,
