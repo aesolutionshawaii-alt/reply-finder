@@ -7,22 +7,7 @@ import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
 
 export default function Home() {
-  const [loading, setLoading] = useState(false);
-
-  const handleProCheckout = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/checkout', { method: 'POST' });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch {
-      alert('Something went wrong');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [email, setEmail] = useState('');
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -71,12 +56,21 @@ export default function Home() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <a href="/signup">
-                <Button className="bg-white text-black hover:bg-gray-200 gap-2 px-8 py-6 text-lg">
-                  Sign up Free
-                  <ArrowRight className="w-5 h-5" />
-                </Button>
-              </a>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <input
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 flex-1 sm:w-64"
+                />
+                <a href="/signup">
+                  <Button className="bg-white text-black hover:bg-gray-200 gap-2">
+                    Start Free
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </a>
+              </div>
             </div>
             <p className="text-sm text-gray-500 mt-4">Free tier available. No credit card required.</p>
           </motion.div>
@@ -143,7 +137,7 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
             >
-              <Card className="p-8 bg-white/5 border-white/10 hover:bg-white/[0.07] transition-all h-full">
+              <Card className="p-8 bg-white/5 border-white/10 hover:bg-white/[0.07] transition-all">
                 <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-6">
                   <Mail className="w-6 h-6" />
                 </div>
@@ -160,7 +154,7 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
             >
-              <Card className="p-8 bg-white/5 border-white/10 hover:bg-white/[0.07] transition-all h-full">
+              <Card className="p-8 bg-white/5 border-white/10 hover:bg-white/[0.07] transition-all">
                 <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-6">
                   <Sparkles className="w-6 h-6" />
                 </div>
@@ -177,13 +171,13 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ delay: 0.3 }}
             >
-              <Card className="p-8 bg-white/5 border-white/10 hover:bg-white/[0.07] transition-all h-full">
+              <Card className="p-8 bg-white/5 border-white/10 hover:bg-white/[0.07] transition-all">
                 <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-6">
                   <Target className="w-6 h-6" />
                 </div>
                 <h3 className="text-2xl font-semibold mb-3">One-click reply</h3>
                 <p className="text-gray-400 leading-relaxed">
-                  Review, edit if needed, and reply directly from your email. No X app required.
+                  Review, edit if needed, and reply—all from your email. No X app needed.
                 </p>
               </Card>
             </motion.div>
@@ -203,8 +197,8 @@ export default function Home() {
               <div className="flex items-start gap-4 mb-6">
                 <Clock className="w-5 h-5 text-gray-400 mt-1" />
                 <div>
-                  <div className="text-sm text-gray-400 mb-1">Today, 6:00 AM HST</div>
-                  <div className="font-semibold text-lg mb-4">Your Daily Digest</div>
+                  <div className="text-sm text-gray-400 mb-1">Today, 8:00 AM</div>
+                  <div className="font-semibold text-lg mb-4">Your Daily Digest · 5 opportunities</div>
                 </div>
               </div>
 
@@ -215,7 +209,7 @@ export default function Home() {
                     <div className="flex-1">
                       <div className="font-medium mb-1">@techfounder</div>
                       <p className="text-gray-300 text-sm leading-relaxed">
-                        Just shipped our new feature after 3 months of work. The team pulled through
+                        Just shipped our new feature after 3 months of work. The team pulled through 🚀
                       </p>
                     </div>
                   </div>
@@ -227,7 +221,7 @@ export default function Home() {
                         AI-suggested reply
                       </div>
                       <p className="text-sm text-gray-400 italic">
-                        &quot;Congrats on the launch! The persistence paid off. What was the biggest technical challenge you overcame?&quot;
+                        "Congrats on the launch! The persistence paid off. What was the biggest technical challenge you overcame?"
                       </p>
                     </div>
                   </div>
@@ -235,7 +229,7 @@ export default function Home() {
 
                 <div className="flex items-center gap-3 text-sm text-gray-500">
                   <Check className="w-4 h-4" />
-                  <span>Click to reply directly</span>
+                  <span>Click to reply directly from email</span>
                 </div>
               </div>
             </Card>
@@ -334,14 +328,12 @@ export default function Home() {
                   </li>
                 </ul>
 
-                <Button
-                  onClick={handleProCheckout}
-                  disabled={loading}
-                  className="w-full bg-black text-white hover:bg-black/90 gap-2"
-                >
-                  {loading ? 'Loading...' : 'Start Pro'}
-                  {!loading && <ArrowRight className="w-4 h-4" />}
-                </Button>
+                <a href="/api/checkout">
+                  <Button className="w-full bg-black text-white hover:bg-black/90 gap-2">
+                    Start Pro
+                    <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </a>
               </Card>
             </motion.div>
           </div>
