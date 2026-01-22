@@ -216,7 +216,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 text-sm text-gray-500">
+                <div className="flex items-center gap-3 text-sm text-gray-400 font-medium">
                   <Check className="w-4 h-4" />
                   <span>Click to reply directly from email</span>
                 </div>
