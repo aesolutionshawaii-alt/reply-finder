@@ -3,15 +3,30 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'motion/react';
-import { Zap, Users, User, Send, CreditCard, ExternalLink, ChevronRight, Clock, Mail, ArrowRight, Plus, X, Crown, BadgeCheck, Download, Loader2, Check, RefreshCw } from 'lucide-react';
+import { Zap, Users, User, CreditCard, ChevronRight, Clock, Mail, ArrowRight, Plus, X, Crown, BadgeCheck, Download, Loader2, Check, RefreshCw, Sparkles } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
+import VoiceSetupWizard from '../components/VoiceSetupWizard';
 
 interface AccountData {
   handle: string;
   name: string | null;
   isVerified: boolean;
   profilePicture: string | null;
+}
+
+interface VoiceAttributes {
+  conversationStyle?: 'celebratory' | 'curious' | 'relatable' | 'analytical';
+  disagreementApproach?: 'direct' | 'nuanced' | 'questioning' | 'agreeing';
+  valueAddStyle?: 'tactical' | 'encouraging' | 'reframing' | 'storytelling';
+  humorLevel?: 'sarcastic' | 'factual' | 'self-deprecating' | 'none';
+  expertiseDisplay?: 'credentialed' | 'insight-focused' | 'questioning' | 'curator';
+}
+
+interface SampleContent {
+  id: string;
+  text: string;
+  createdAt: string;
 }
 
 interface UserData {
@@ -25,6 +40,15 @@ interface UserData {
     tone: string;
     exampleReplies: string;
     skipPolitical: boolean;
+    // Voice learning fields
+    xHandle: string | null;
+    xBio: string | null;
+    positioning: string | null;
+    voiceAttributes: VoiceAttributes;
+    avoidPatterns: string[];
+    sampleTweets: SampleContent[];
+    sampleReplies: SampleContent[];
+    voiceConfidence: number;
   } | null;
   accounts: AccountData[];
 }
@@ -299,6 +323,10 @@ function DashboardContent() {
   const [importAccounts, setImportAccounts] = useState<{ handle: string; name: string; isVerified: boolean; followers: number; selected: boolean; alreadyAdded: boolean }[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Voice wizard mode
+  const [showVoiceWizard, setShowVoiceWizard] = useState(false);
+  const [voiceConfidence, setVoiceConfidence] = useState(0);
+
   const timeOptions = generateTimeOptions();
 
   // Auto-dismiss success messages after 5 seconds (but not while sending digest)
@@ -351,6 +379,7 @@ function DashboardContent() {
           setTone(data.profile.tone || '');
           setExampleReplies(data.profile.exampleReplies || '');
           setSkipPolitical(data.profile.skipPolitical ?? true);
+          setVoiceConfidence(data.profile.voiceConfidence || 0);
         }
         setIsLoggedIn(true);
       }
@@ -1236,90 +1265,195 @@ function DashboardContent() {
           {/* Profile Section */}
           {activeSection === 'profile' && (
             <div>
-              <SectionHeader
-                title="Your Profile"
-                description="Tell us about yourself so the AI can write replies in your voice."
-              />
+              {showVoiceWizard ? (
+                <>
+                  <SectionHeader
+                    title="Voice Setup Wizard"
+                    description="Complete these steps to help the AI write replies in your voice."
+                  />
+                  <VoiceSetupWizard
+                    initialData={{
+                      displayName,
+                      bio,
+                      tone,
+                      xHandle: userData?.profile?.xHandle || '',
+                      xBio: userData?.profile?.xBio || '',
+                      positioning: userData?.profile?.positioning || '',
+                      voiceAttributes: (userData?.profile?.voiceAttributes || {}) as VoiceAttributes,
+                      avoidPatterns: (userData?.profile?.avoidPatterns || []) as ('hype_words' | 'ending_questions' | 'self_promotion' | 'corporate_jargon' | 'emojis' | 'hashtags' | 'generic_agreement' | 'unsolicited_advice')[],
+                      sampleTweets: userData?.profile?.sampleTweets || [],
+                      sampleReplies: userData?.profile?.sampleReplies || [],
+                    }}
+                    onSave={async (data) => {
+                      setLoading(true);
+                      setError('');
+                      try {
+                        const response = await fetch('/api/admin/update-profile', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            displayName: data.displayName,
+                            bio: data.bio,
+                            tone: data.tone,
+                            skipPolitical,
+                            xHandle: data.xHandle,
+                            xBio: data.xBio,
+                            positioning: data.positioning,
+                            voiceAttributes: data.voiceAttributes,
+                            avoidPatterns: data.avoidPatterns,
+                            sampleTweets: data.sampleTweets,
+                            sampleReplies: data.sampleReplies,
+                          }),
+                        });
+                        const result = await response.json();
+                        if (!response.ok) {
+                          throw new Error(result.error || 'Failed to save');
+                        }
+                        setDisplayName(data.displayName);
+                        setBio(data.bio);
+                        setTone(data.tone);
+                        setVoiceConfidence(result.voiceConfidence || 0);
+                        setShowVoiceWizard(false);
+                        setSuccess('Voice profile saved! Your replies will now better match your voice.');
+                        // Refresh user data
+                        checkSession();
+                      } catch (err) {
+                        throw err;
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    onCancel={() => setShowVoiceWizard(false)}
+                  />
+                </>
+              ) : (
+                <>
+                  <SectionHeader
+                    title="Your Profile"
+                    description="Tell us about yourself so the AI can write replies in your voice."
+                  />
 
-              <Card className="bg-white/5 border-white/10 p-6">
-                <div className="space-y-5">
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-300">Name</label>
-                    <input
-                      type="text"
-                      value={displayName}
-                      onChange={(e) => setDisplayName(e.target.value)}
-                      placeholder="Your name"
-                      className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
-                    />
-                  </div>
+                  {/* Voice Confidence Card */}
+                  <Card className="bg-gradient-to-br from-purple-500/10 to-blue-500/5 border-purple-500/20 p-5 mb-6">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                        <Sparkles className="w-5 h-5 text-purple-400" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="font-medium">Voice Confidence</h3>
+                          <span className={`text-xl font-bold ${voiceConfidence >= 70 ? 'text-green-400' : voiceConfidence >= 40 ? 'text-yellow-400' : 'text-gray-400'}`}>
+                            {voiceConfidence}%
+                          </span>
+                        </div>
+                        <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-3">
+                          <div
+                            className={`h-full transition-all duration-300 ${
+                              voiceConfidence >= 70 ? 'bg-green-500' : voiceConfidence >= 40 ? 'bg-yellow-500' : 'bg-gray-500'
+                            }`}
+                            style={{ width: `${voiceConfidence}%` }}
+                          />
+                        </div>
+                        <p className="text-sm text-gray-400 mb-3">
+                          {voiceConfidence >= 70
+                            ? 'Excellent! Your replies closely match your voice.'
+                            : voiceConfidence >= 40
+                            ? 'Good start! Complete the voice wizard for better results.'
+                            : 'Set up your voice profile for AI replies that sound like you.'}
+                        </p>
+                        <Button
+                          onClick={() => setShowVoiceWizard(true)}
+                          className="bg-purple-500 hover:bg-purple-600 text-white"
+                          size="sm"
+                        >
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          {voiceConfidence > 0 ? 'Improve Voice Profile' : 'Set Up Voice Profile'}
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-300">Bio</label>
-                    <textarea
-                      value={bio}
-                      onChange={(e) => setBio(e.target.value)}
-                      placeholder="What do you do? (1-2 sentences)"
-                      rows={2}
-                      className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
-                    />
-                  </div>
+                  <Card className="bg-white/5 border-white/10 p-6">
+                    <div className="space-y-5">
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-300">Name</label>
+                        <input
+                          type="text"
+                          value={displayName}
+                          onChange={(e) => setDisplayName(e.target.value)}
+                          placeholder="Your name"
+                          className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+                        />
+                      </div>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-300">Expertise / Topics</label>
-                    <input
-                      type="text"
-                      value={expertise}
-                      onChange={(e) => setExpertise(e.target.value)}
-                      placeholder="startups, design, finance, etc."
-                      className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
-                    />
-                  </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-300">Bio</label>
+                        <textarea
+                          value={bio}
+                          onChange={(e) => setBio(e.target.value)}
+                          placeholder="What do you do? (1-2 sentences)"
+                          rows={2}
+                          className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+                        />
+                      </div>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-300">Tone / Style</label>
-                    <input
-                      type="text"
-                      value={tone}
-                      onChange={(e) => setTone(e.target.value)}
-                      placeholder="casual, helpful, friendly"
-                      className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
-                    />
-                  </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-300">Expertise / Topics</label>
+                        <input
+                          type="text"
+                          value={expertise}
+                          onChange={(e) => setExpertise(e.target.value)}
+                          placeholder="startups, design, finance, etc."
+                          className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+                        />
+                      </div>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-300">Example Replies (optional)</label>
-                    <textarea
-                      value={exampleReplies}
-                      onChange={(e) => setExampleReplies(e.target.value)}
-                      placeholder="Paste 2-3 replies you've written to help match your voice"
-                      rows={4}
-                      className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
-                    />
-                  </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-300">Tone / Style</label>
+                        <input
+                          type="text"
+                          value={tone}
+                          onChange={(e) => setTone(e.target.value)}
+                          placeholder="casual, helpful, friendly"
+                          className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+                        />
+                      </div>
 
-                  <div className="flex items-center gap-3 pt-2">
-                    <input
-                      type="checkbox"
-                      id="skipPolitical"
-                      checked={skipPolitical}
-                      onChange={(e) => setSkipPolitical(e.target.checked)}
-                      className="w-4 h-4 rounded border-white/20 bg-white/5"
-                    />
-                    <label htmlFor="skipPolitical" className="text-sm text-gray-300">
-                      Skip political content
-                    </label>
-                  </div>
-                </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-2 text-gray-300">Example Replies (optional)</label>
+                        <textarea
+                          value={exampleReplies}
+                          onChange={(e) => setExampleReplies(e.target.value)}
+                          placeholder="Paste 2-3 replies you've written to help match your voice"
+                          rows={4}
+                          className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+                        />
+                      </div>
 
-                <Button
-                  onClick={handleSaveProfile}
-                  disabled={loading}
-                  className="mt-6 bg-white text-black hover:bg-gray-200"
-                >
-                  {loading ? 'Saving...' : 'Save Profile'}
-                </Button>
-              </Card>
+                      <div className="flex items-center gap-3 pt-2">
+                        <input
+                          type="checkbox"
+                          id="skipPolitical"
+                          checked={skipPolitical}
+                          onChange={(e) => setSkipPolitical(e.target.checked)}
+                          className="w-4 h-4 rounded border-white/20 bg-white/5"
+                        />
+                        <label htmlFor="skipPolitical" className="text-sm text-gray-300">
+                          Skip political content
+                        </label>
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={handleSaveProfile}
+                      disabled={loading}
+                      className="mt-6 bg-white text-black hover:bg-gray-200"
+                    >
+                      {loading ? 'Saving...' : 'Save Profile'}
+                    </Button>
+                  </Card>
+                </>
+              )}
             </div>
           )}
 

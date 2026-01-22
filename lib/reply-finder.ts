@@ -119,6 +119,12 @@ export async function findOpportunities(
       expertise: userProfile.expertise || '',
       tone: userProfile.tone || 'friendly and helpful',
       exampleReplies: userProfile.example_replies || '',
+      // Voice learning fields
+      voiceConfidence: userProfile.voice_confidence || 0,
+      positioning: userProfile.positioning || undefined,
+      voiceAttributes: userProfile.voice_attributes || undefined,
+      avoidPatterns: userProfile.avoid_patterns || undefined,
+      sampleReplies: userProfile.sample_replies || undefined,
     };
 
     // Generate replies in parallel (batches of 3 to be safe with rate limits)

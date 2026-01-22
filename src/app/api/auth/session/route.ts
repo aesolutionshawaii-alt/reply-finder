@@ -37,6 +37,15 @@ export async function GET(request: NextRequest) {
         tone: profile.tone,
         exampleReplies: profile.example_replies,
         skipPolitical: profile.skip_political ?? true,
+        // Voice learning fields
+        xHandle: profile.x_handle,
+        xBio: profile.x_bio,
+        positioning: profile.positioning,
+        voiceAttributes: profile.voice_attributes || {},
+        avoidPatterns: profile.avoid_patterns || [],
+        sampleTweets: profile.sample_tweets || [],
+        sampleReplies: profile.sample_replies || [],
+        voiceConfidence: profile.voice_confidence || 0,
       } : null,
     });
   } catch (err) {

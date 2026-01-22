@@ -188,6 +188,39 @@ export async function logEmail(userId: number, opportunitiesCount: number, statu
   `;
 }
 
+// ============ VOICE LEARNING SYSTEM ============
+
+export interface VoiceAttributes {
+  conversationStyle?: 'celebratory' | 'curious' | 'relatable' | 'analytical';
+  disagreementApproach?: 'direct' | 'nuanced' | 'questioning' | 'agreeing';
+  valueAddStyle?: 'tactical' | 'encouraging' | 'reframing' | 'storytelling';
+  humorLevel?: 'sarcastic' | 'factual' | 'self-deprecating' | 'none';
+  expertiseDisplay?: 'credentialed' | 'insight-focused' | 'questioning' | 'curator';
+}
+
+export type AvoidPattern =
+  | 'hype_words'
+  | 'ending_questions'
+  | 'self_promotion'
+  | 'corporate_jargon'
+  | 'emojis'
+  | 'hashtags'
+  | 'generic_agreement'
+  | 'unsolicited_advice';
+
+export interface SampleTweet {
+  id: string;
+  text: string;
+  created_at: string;
+}
+
+export interface SampleReply {
+  id: string;
+  text: string;
+  in_reply_to_id?: string;
+  created_at: string;
+}
+
 export interface UserProfile {
   id: number;
   user_id: number;
@@ -197,28 +230,135 @@ export interface UserProfile {
   tone: string | null;
   example_replies: string | null;
   skip_political: boolean;
+  // Voice learning fields
+  x_handle: string | null;
+  x_bio: string | null;
+  positioning: string | null;
+  voice_attributes: VoiceAttributes;
+  avoid_patterns: AvoidPattern[];
+  sample_tweets: SampleTweet[];
+  sample_replies: SampleReply[];
+  voice_confidence: number;
   created_at: Date;
   updated_at: Date;
 }
 
+export interface SaveUserProfileInput {
+  displayName?: string;
+  bio?: string;
+  expertise?: string;
+  tone?: string;
+  exampleReplies?: string;
+  skipPolitical?: boolean;
+  // Voice learning fields
+  xHandle?: string;
+  xBio?: string;
+  positioning?: string;
+  voiceAttributes?: VoiceAttributes;
+  avoidPatterns?: AvoidPattern[];
+  sampleTweets?: SampleTweet[];
+  sampleReplies?: SampleReply[];
+  voiceConfidence?: number;
+}
+
 export async function saveUserProfile(
   userId: number,
-  profile: { displayName?: string; bio?: string; expertise?: string; tone?: string; exampleReplies?: string; skipPolitical?: boolean }
+  profile: SaveUserProfileInput
 ): Promise<void> {
   const sql = getDb();
   const skipPolitical = profile.skipPolitical ?? true; // Default to true (skip political)
+
+  // Calculate voice confidence if not provided
+  const voiceConfidence = profile.voiceConfidence ?? calculateVoiceConfidence(profile);
+
   await sql`
-    INSERT INTO user_profiles (user_id, display_name, bio, expertise, tone, example_replies, skip_political)
-    VALUES (${userId}, ${profile.displayName || null}, ${profile.bio || null}, ${profile.expertise || null}, ${profile.tone || null}, ${profile.exampleReplies || null}, ${skipPolitical})
+    INSERT INTO user_profiles (
+      user_id, display_name, bio, expertise, tone, example_replies, skip_political,
+      x_handle, x_bio, positioning, voice_attributes, avoid_patterns, sample_tweets, sample_replies, voice_confidence
+    )
+    VALUES (
+      ${userId},
+      ${profile.displayName || null},
+      ${profile.bio || null},
+      ${profile.expertise || null},
+      ${profile.tone || null},
+      ${profile.exampleReplies || null},
+      ${skipPolitical},
+      ${profile.xHandle || null},
+      ${profile.xBio || null},
+      ${profile.positioning || null},
+      ${JSON.stringify(profile.voiceAttributes || {})},
+      ${profile.avoidPatterns || []},
+      ${JSON.stringify(profile.sampleTweets || [])},
+      ${JSON.stringify(profile.sampleReplies || [])},
+      ${voiceConfidence}
+    )
     ON CONFLICT (user_id) DO UPDATE SET
-      display_name = ${profile.displayName || null},
-      bio = ${profile.bio || null},
-      expertise = ${profile.expertise || null},
-      tone = ${profile.tone || null},
-      example_replies = ${profile.exampleReplies || null},
+      display_name = COALESCE(${profile.displayName || null}, user_profiles.display_name),
+      bio = COALESCE(${profile.bio || null}, user_profiles.bio),
+      expertise = COALESCE(${profile.expertise || null}, user_profiles.expertise),
+      tone = COALESCE(${profile.tone || null}, user_profiles.tone),
+      example_replies = COALESCE(${profile.exampleReplies || null}, user_profiles.example_replies),
       skip_political = ${skipPolitical},
+      x_handle = COALESCE(${profile.xHandle || null}, user_profiles.x_handle),
+      x_bio = COALESCE(${profile.xBio || null}, user_profiles.x_bio),
+      positioning = COALESCE(${profile.positioning || null}, user_profiles.positioning),
+      voice_attributes = CASE
+        WHEN ${profile.voiceAttributes !== undefined} THEN ${JSON.stringify(profile.voiceAttributes || {})}::jsonb
+        ELSE user_profiles.voice_attributes
+      END,
+      avoid_patterns = CASE
+        WHEN ${profile.avoidPatterns !== undefined} THEN ${profile.avoidPatterns || []}::text[]
+        ELSE user_profiles.avoid_patterns
+      END,
+      sample_tweets = CASE
+        WHEN ${profile.sampleTweets !== undefined} THEN ${JSON.stringify(profile.sampleTweets || [])}::jsonb
+        ELSE user_profiles.sample_tweets
+      END,
+      sample_replies = CASE
+        WHEN ${profile.sampleReplies !== undefined} THEN ${JSON.stringify(profile.sampleReplies || [])}::jsonb
+        ELSE user_profiles.sample_replies
+      END,
+      voice_confidence = ${voiceConfidence},
       updated_at = NOW()
   `;
+}
+
+// Calculate voice confidence score (0-100)
+export function calculateVoiceConfidence(profile: SaveUserProfileInput): number {
+  let score = 0;
+
+  // Basic profile (name, bio, tone): 25 pts
+  if (profile.displayName) score += 8;
+  if (profile.bio) score += 10;
+  if (profile.tone) score += 7;
+
+  // Voice picker complete: 25 pts
+  if (profile.voiceAttributes) {
+    const attrs = profile.voiceAttributes;
+    if (attrs.conversationStyle) score += 5;
+    if (attrs.disagreementApproach) score += 5;
+    if (attrs.valueAddStyle) score += 5;
+    if (attrs.humorLevel) score += 5;
+    if (attrs.expertiseDisplay) score += 5;
+  }
+
+  // Positioning + anti-patterns: 15 pts
+  if (profile.positioning) score += 10;
+  if (profile.avoidPatterns && profile.avoidPatterns.length > 0) score += 5;
+
+  // X handle with bio: 10 pts
+  if (profile.xHandle) score += 5;
+  if (profile.xBio) score += 5;
+
+  // Sample replies: 20 pts
+  if (profile.sampleReplies && profile.sampleReplies.length > 0) {
+    score += Math.min(20, profile.sampleReplies.length * 5);
+  } else if (profile.exampleReplies) {
+    score += 10; // Legacy example replies field
+  }
+
+  return Math.min(100, score);
 }
 
 export async function getUserProfile(userId: number): Promise<UserProfile | null> {
@@ -556,4 +696,90 @@ export async function cleanupExpiredTweetCache(): Promise<number> {
     RETURNING id
   `;
   return result.length;
+}
+
+// ============ REPLY FEEDBACK ============
+
+export interface ReplyFeedback {
+  id: number;
+  user_id: number;
+  tweet_id: string;
+  tweet_url: string | null;
+  draft_reply: string;
+  feedback_type: 'copied' | 'used' | 'skipped' | 'edited';
+  actual_reply_text: string | null;
+  created_at: Date;
+}
+
+export async function saveReplyFeedback(
+  userId: number,
+  tweetId: string,
+  tweetUrl: string | null,
+  draftReply: string,
+  feedbackType: 'copied' | 'used' | 'skipped' | 'edited',
+  actualReplyText?: string
+): Promise<void> {
+  const sql = getDb();
+  await sql`
+    INSERT INTO reply_feedback (user_id, tweet_id, tweet_url, draft_reply, feedback_type, actual_reply_text)
+    VALUES (${userId}, ${tweetId}, ${tweetUrl}, ${draftReply}, ${feedbackType}, ${actualReplyText || null})
+  `;
+}
+
+export async function getReplyFeedback(userId: number, limit: number = 50): Promise<ReplyFeedback[]> {
+  const sql = getDb();
+  const result = await sql`
+    SELECT * FROM reply_feedback
+    WHERE user_id = ${userId}
+    ORDER BY created_at DESC
+    LIMIT ${limit}
+  `;
+  return result as ReplyFeedback[];
+}
+
+export async function getReplyFeedbackStats(userId: number): Promise<{
+  total: number;
+  copied: number;
+  used: number;
+  skipped: number;
+  edited: number;
+}> {
+  const sql = getDb();
+  const [result] = await sql`
+    SELECT
+      COUNT(*)::int as total,
+      COUNT(*) FILTER (WHERE feedback_type = 'copied')::int as copied,
+      COUNT(*) FILTER (WHERE feedback_type = 'used')::int as used,
+      COUNT(*) FILTER (WHERE feedback_type = 'skipped')::int as skipped,
+      COUNT(*) FILTER (WHERE feedback_type = 'edited')::int as edited
+    FROM reply_feedback
+    WHERE user_id = ${userId}
+  `;
+  return {
+    total: result.total,
+    copied: result.copied,
+    used: result.used,
+    skipped: result.skipped,
+    edited: result.edited,
+  };
+}
+
+// Update voice confidence after feedback (Phase 3)
+export async function updateVoiceConfidenceFromFeedback(userId: number): Promise<void> {
+  const sql = getDb();
+  const stats = await getReplyFeedbackStats(userId);
+
+  // Add up to 5 points based on feedback data
+  if (stats.total >= 10) {
+    const currentProfile = await getUserProfile(userId);
+    if (currentProfile) {
+      const feedbackBonus = Math.min(5, Math.floor(stats.used / 5));
+      const newConfidence = Math.min(100, currentProfile.voice_confidence + feedbackBonus);
+      await sql`
+        UPDATE user_profiles
+        SET voice_confidence = ${newConfidence}, updated_at = NOW()
+        WHERE user_id = ${userId}
+      `;
+    }
+  }
 }

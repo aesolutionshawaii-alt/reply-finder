@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserByEmail, saveMonitoredAccounts, saveUserProfile } from '../../../../lib/db';
+import { getUserByEmail, saveMonitoredAccounts, saveUserProfile, calculateVoiceConfidence, VoiceAttributes, AvoidPattern, SampleTweet, SampleReply } from '../../../../lib/db';
 import { fetchUserProfile } from '../../../../lib/twitter';
 
 export async function POST(request: NextRequest) {
@@ -48,12 +48,12 @@ export async function POST(request: NextRequest) {
     const accountsWithProfiles = [];
     for (const handle of handles) {
       try {
-        const profile = await fetchUserProfile(handle);
+        const twitterProfile = await fetchUserProfile(handle);
         accountsWithProfiles.push({
           handle,
-          name: profile?.name || undefined,
-          isVerified: profile?.isVerified || false,
-          profilePicture: profile?.profilePicture || undefined,
+          name: twitterProfile?.name || undefined,
+          isVerified: twitterProfile?.isVerified || false,
+          profilePicture: twitterProfile?.profilePicture || undefined,
         });
       } catch {
         accountsWithProfiles.push({ handle, name: undefined, isVerified: false, profilePicture: undefined });
@@ -69,12 +69,29 @@ export async function POST(request: NextRequest) {
 
     // Save profile if provided
     if (profile) {
-      await saveUserProfile(user.id, {
+      const profileData = {
         displayName: profile.displayName,
         bio: profile.bio,
         expertise: profile.expertise,
         tone: profile.tone,
         exampleReplies: profile.exampleReplies,
+        skipPolitical: profile.skipPolitical,
+        // Voice learning fields
+        xHandle: profile.xHandle,
+        xBio: profile.xBio,
+        positioning: profile.positioning,
+        voiceAttributes: profile.voiceAttributes as VoiceAttributes | undefined,
+        avoidPatterns: profile.avoidPatterns as AvoidPattern[] | undefined,
+        sampleTweets: profile.sampleTweets as SampleTweet[] | undefined,
+        sampleReplies: profile.sampleReplies as SampleReply[] | undefined,
+      };
+
+      // Calculate voice confidence
+      const voiceConfidence = calculateVoiceConfidence(profileData);
+
+      await saveUserProfile(user.id, {
+        ...profileData,
+        voiceConfidence,
       });
     }
 

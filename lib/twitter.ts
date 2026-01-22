@@ -196,3 +196,130 @@ export async function fetchUserFollowing(handle: string, count: number = 100): P
     return { accounts: [], error: String(error) };
   }
 }
+
+// ============ USER VOICE IMPORT ============
+
+export interface UserFullProfile {
+  userName: string;
+  name: string;
+  bio: string;
+  profilePicture: string;
+  isVerified: boolean;
+  followers: number;
+  following: number;
+  tweetCount: number;
+}
+
+export interface UserReply {
+  id: string;
+  text: string;
+  createdAt: string;
+  inReplyToId: string | null;
+  likeCount: number;
+}
+
+export interface FetchUserRepliesResult {
+  profile: UserFullProfile | null;
+  replies: UserReply[];
+  tweets: Tweet[];
+  error?: string;
+}
+
+export async function fetchUserFullProfile(handle: string): Promise<UserFullProfile | null> {
+  try {
+    const response = await fetch(
+      `${API_BASE}/user/info?userName=${handle}`,
+      {
+        headers: {
+          'X-API-Key': getApiKey(),
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data = await response.json();
+    const user = data.data || data;
+
+    return {
+      userName: user.userName || user.username || handle,
+      name: user.name || handle,
+      bio: user.description || user.bio || '',
+      profilePicture: user.profilePicture || user.profile_image_url || '',
+      isVerified: user.isBlueVerified || user.isVerified || user.verified || false,
+      followers: user.followers || user.followers_count || 0,
+      following: user.following || user.friends_count || 0,
+      tweetCount: user.statusesCount || user.statuses_count || 0,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchUserReplies(handle: string, count: number = 20): Promise<FetchUserRepliesResult> {
+  try {
+    // First, get the user's profile
+    const profile = await fetchUserFullProfile(handle);
+
+    // Then fetch their recent tweets (includes replies)
+    const response = await fetch(
+      `${API_BASE}/user/last_tweets?userName=${handle}&count=${count}`,
+      {
+        headers: {
+          'X-API-Key': getApiKey(),
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      return { profile, replies: [], tweets: [], error: `HTTP ${response.status}: ${error}` };
+    }
+
+    const data = await response.json();
+    const allTweets = data.tweets || data.data?.tweets || [];
+
+    // Separate replies from regular tweets
+    const replies: UserReply[] = [];
+    const tweets: Tweet[] = [];
+
+    for (const tweet of allTweets) {
+      const isReply = tweet.inReplyToId || tweet.in_reply_to_status_id || tweet.isReply;
+
+      if (isReply) {
+        replies.push({
+          id: tweet.id || tweet.id_str,
+          text: tweet.text || tweet.full_text || '',
+          createdAt: tweet.createdAt || tweet.created_at || '',
+          inReplyToId: tweet.inReplyToId || tweet.in_reply_to_status_id || null,
+          likeCount: tweet.likeCount || tweet.favorite_count || 0,
+        });
+      } else {
+        tweets.push({
+          id: tweet.id || tweet.id_str,
+          text: tweet.text || tweet.full_text || '',
+          url: tweet.url || `https://twitter.com/${handle}/status/${tweet.id}`,
+          createdAt: tweet.createdAt || tweet.created_at || '',
+          likeCount: tweet.likeCount || tweet.favorite_count || 0,
+          retweetCount: tweet.retweetCount || tweet.retweet_count || 0,
+          replyCount: tweet.replyCount || tweet.reply_count || 0,
+          viewCount: tweet.viewCount || tweet.views?.count || 0,
+          author: {
+            userName: handle,
+            name: profile?.name || handle,
+            profilePicture: profile?.profilePicture || '',
+            followers: profile?.followers || 0,
+          },
+        });
+      }
+    }
+
+    return { profile, replies, tweets };
+  } catch (error) {
+    return { profile: null, replies: [], tweets: [], error: String(error) };
+  }
+}

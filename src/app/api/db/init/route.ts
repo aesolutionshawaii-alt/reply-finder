@@ -141,6 +141,57 @@ export async function GET() {
       ADD COLUMN IF NOT EXISTS profile_picture TEXT
     `;
 
+    // ============ VOICE LEARNING SYSTEM ============
+
+    // Add voice learning columns to user_profiles
+    await sql`
+      ALTER TABLE user_profiles
+      ADD COLUMN IF NOT EXISTS x_handle VARCHAR(255)
+    `;
+    await sql`
+      ALTER TABLE user_profiles
+      ADD COLUMN IF NOT EXISTS x_bio TEXT
+    `;
+    await sql`
+      ALTER TABLE user_profiles
+      ADD COLUMN IF NOT EXISTS positioning TEXT
+    `;
+    await sql`
+      ALTER TABLE user_profiles
+      ADD COLUMN IF NOT EXISTS voice_attributes JSONB DEFAULT '{}'
+    `;
+    await sql`
+      ALTER TABLE user_profiles
+      ADD COLUMN IF NOT EXISTS avoid_patterns TEXT[]
+    `;
+    await sql`
+      ALTER TABLE user_profiles
+      ADD COLUMN IF NOT EXISTS sample_tweets JSONB DEFAULT '[]'
+    `;
+    await sql`
+      ALTER TABLE user_profiles
+      ADD COLUMN IF NOT EXISTS sample_replies JSONB DEFAULT '[]'
+    `;
+    await sql`
+      ALTER TABLE user_profiles
+      ADD COLUMN IF NOT EXISTS voice_confidence INTEGER DEFAULT 0
+    `;
+
+    // Reply feedback table for tracking engagement
+    await sql`
+      CREATE TABLE IF NOT EXISTS reply_feedback (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        tweet_id VARCHAR(255),
+        tweet_url TEXT,
+        draft_reply TEXT,
+        feedback_type VARCHAR(50),
+        actual_reply_text TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_reply_feedback_user ON reply_feedback(user_id)`;
+
     // Tweet cache for reducing API calls
     await sql`
       CREATE TABLE IF NOT EXISTS tweet_cache (

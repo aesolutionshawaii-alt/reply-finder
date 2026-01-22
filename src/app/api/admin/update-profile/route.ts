@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getUserByEmail, saveUserProfile } from '../../../../../lib/db';
+import { getUserByEmail, saveUserProfile, calculateVoiceConfidence, VoiceAttributes, AvoidPattern, SampleTweet, SampleReply } from '../../../../../lib/db';
 import { requireAuth, checkRateLimit, getClientIP } from '../../../../../lib/auth';
 
 // Update profile for authenticated users
@@ -16,23 +16,57 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { displayName, bio, expertise, tone, exampleReplies, skipPolitical } = body;
-
-    const user = await getUserByEmail(session.email);
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
-
-    await saveUserProfile(user.id, {
+    const {
       displayName,
       bio,
       expertise,
       tone,
       exampleReplies,
       skipPolitical,
+      // Voice learning fields
+      xHandle,
+      xBio,
+      positioning,
+      voiceAttributes,
+      avoidPatterns,
+      sampleTweets,
+      sampleReplies,
+    } = body;
+
+    const user = await getUserByEmail(session.email);
+    if (!user) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+    }
+
+    const profileData = {
+      displayName,
+      bio,
+      expertise,
+      tone,
+      exampleReplies,
+      skipPolitical,
+      xHandle,
+      xBio,
+      positioning,
+      voiceAttributes: voiceAttributes as VoiceAttributes | undefined,
+      avoidPatterns: avoidPatterns as AvoidPattern[] | undefined,
+      sampleTweets: sampleTweets as SampleTweet[] | undefined,
+      sampleReplies: sampleReplies as SampleReply[] | undefined,
+    };
+
+    // Calculate voice confidence
+    const voiceConfidence = calculateVoiceConfidence(profileData);
+
+    await saveUserProfile(user.id, {
+      ...profileData,
+      voiceConfidence,
     });
 
-    return NextResponse.json({ success: true, message: 'Profile updated' });
+    return NextResponse.json({
+      success: true,
+      message: 'Profile updated',
+      voiceConfidence,
+    });
   } catch (err) {
     console.error('Update profile error:', err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
