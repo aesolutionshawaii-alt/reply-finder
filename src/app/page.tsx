@@ -17,13 +17,13 @@ export default function Home() {
             <span className="font-semibold text-xl">XeroScroll</span>
           </div>
           <div className="flex items-center gap-6">
-            <a href="#pricing" className="text-base text-gray-400 hover:text-white transition-colors">
+            <a href="#pricing" className="text-base font-medium text-gray-300 hover:text-white transition-colors">
               Pricing
             </a>
             <a href="/dashboard">
-              <button className="px-6 py-2.5 text-base font-medium bg-white text-black rounded-xl hover:bg-gray-100 transition-colors">
+              <Button variant="default" size="lg">
                 Sign In
-              </button>
+              </Button>
             </a>
           </div>
         </div>
