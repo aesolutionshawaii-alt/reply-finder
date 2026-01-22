@@ -246,14 +246,14 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
             >
-              <Card className="p-8 bg-white/5 border-white/10 h-full">
-                <div className="mb-6">
+              <Card className="p-10 bg-white/5 border-white/10 h-full">
+                <div className="mb-8">
                   <h3 className="text-2xl font-semibold mb-2">Free</h3>
                   <div className="text-4xl font-bold mb-1">$0</div>
                   <p className="text-gray-400">Forever free</p>
                 </div>
 
-                <ul className="space-y-4 mb-8">
+                <ul className="space-y-4 mb-10">
                   <li className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                     <span className="text-gray-300">1 account to monitor</span>
@@ -269,7 +269,7 @@ export default function Home() {
                 </ul>
 
                 <a href="/signup">
-                  <Button variant="outline" className="w-full border-white/10 hover:bg-white/5">
+                  <Button variant="default" className="w-full">
                     Get Started
                   </Button>
                 </a>
@@ -282,14 +282,14 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
             >
-              <Card className="p-8 bg-white text-black h-full relative overflow-hidden">
+              <Card className="p-10 bg-white text-black h-full relative overflow-hidden">
                 <div className="absolute top-4 right-4">
                   <div className="px-3 py-1 bg-black/10 rounded-full text-xs font-medium">
                     POPULAR
                   </div>
                 </div>
 
-                <div className="mb-6">
+                <div className="mb-8">
                   <h3 className="text-2xl font-semibold mb-2">Pro</h3>
                   <div className="flex items-baseline gap-2 mb-1">
                     <span className="text-4xl font-bold">$29</span>
@@ -298,7 +298,7 @@ export default function Home() {
                   <p className="text-gray-600">Everything you need to grow</p>
                 </div>
 
-                <ul className="space-y-4 mb-8">
+                <ul className="space-y-4 mb-10">
                   <li className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-black mt-0.5 flex-shrink-0" />
                     <span>10 accounts to monitor</span>
