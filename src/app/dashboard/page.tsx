@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'motion/react';
-import { Zap, Users, User, CreditCard, ChevronRight, Clock, Mail, ArrowRight, Plus, X, Crown, BadgeCheck, Download, Loader2, Check, RefreshCw, Sparkles } from 'lucide-react';
+import { Zap, Users, User, CreditCard, ChevronRight, Clock, Mail, ArrowRight, Plus, X, Crown, BadgeCheck, Download, Loader2, Check, RefreshCw, Sparkles, Menu } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import VoiceSetupWizard from '../components/VoiceSetupWizard';
@@ -157,7 +157,9 @@ function Sidebar({
   onManageSubscription,
   subscriptionLoading,
   onRunNow,
-  sendingDigest
+  sendingDigest,
+  isOpen,
+  onClose
 }: {
   email: string;
   plan: 'free' | 'pro';
@@ -168,6 +170,8 @@ function Sidebar({
   subscriptionLoading: boolean;
   onRunNow: () => void;
   sendingDigest: boolean;
+  isOpen: boolean;
+  onClose: () => void;
 }) {
   const navItems = [
     { id: 'accounts', label: 'Monitored Accounts', icon: Users },
@@ -176,13 +180,29 @@ function Sidebar({
   ];
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-white/5 border-r border-white/10 flex flex-col">
+    <>
+      {/* Mobile overlay */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+          onClick={onClose}
+        />
+      )}
+      <aside className={`fixed left-0 top-0 h-screen w-64 bg-zinc-950 border-r border-white/10 flex flex-col z-50 transition-transform duration-300 lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       {/* Logo */}
       <div className="p-4 border-b border-white/10">
-        <a href="/" className="flex items-center gap-2">
-          <Zap className="w-5 h-5" />
-          <span className="font-semibold text-lg">XeroScroll</span>
-        </a>
+        <div className="flex items-center justify-between">
+          <a href="/" className="flex items-center gap-2">
+            <Zap className="w-5 h-5" />
+            <span className="font-semibold text-lg">XeroScroll</span>
+          </a>
+          <button
+            onClick={onClose}
+            className="lg:hidden p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* User & Plan */}
@@ -273,6 +293,7 @@ function Sidebar({
       )}
 
     </aside>
+    </>
   );
 }
 
@@ -326,6 +347,9 @@ function DashboardContent() {
   // Voice wizard mode
   const [showVoiceWizard, setShowVoiceWizard] = useState(false);
   const [voiceConfidence, setVoiceConfidence] = useState(0);
+
+  // Mobile sidebar
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const timeOptions = generateTimeOptions();
 
@@ -900,30 +924,48 @@ function DashboardContent() {
           setActiveSection(section);
           setSuccess('');
           setError('');
+          setSidebarOpen(false);
         }}
         onLogout={handleLogout}
         onManageSubscription={handleManageSubscription}
         subscriptionLoading={subscriptionLoading}
         onRunNow={handleTestDigest}
         sendingDigest={sendingDigest}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
 
       {/* Main Content */}
-      <main className="ml-64 min-h-screen">
+      <main className="lg:ml-64 min-h-screen">
         {/* Top bar */}
-        <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-xl border-b border-white/10 px-8 py-4">
-          <div className="flex items-center text-sm text-gray-400">
-            <span>Dashboard</span>
-            <ChevronRight className="w-4 h-4 mx-2" />
-            <span className="text-white">
-              {activeSection === 'accounts' && 'Monitored Accounts'}
-              {activeSection === 'profile' && 'Your Profile'}
-              {activeSection === 'schedule' && 'Delivery Time'}
-            </span>
+        <div className="sticky top-0 z-10 bg-black/80 backdrop-blur-xl border-b border-white/10 px-4 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            {/* Mobile menu button */}
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden p-2 -ml-2 hover:bg-white/10 rounded-lg transition-colors"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center text-sm text-gray-400">
+              <span className="hidden sm:inline">Dashboard</span>
+              <ChevronRight className="w-4 h-4 mx-2 hidden sm:block" />
+              <span className="text-white">
+                {activeSection === 'accounts' && 'Monitored Accounts'}
+                {activeSection === 'profile' && 'Your Profile'}
+                {activeSection === 'schedule' && 'Delivery Time'}
+              </span>
+            </div>
+
+            {/* Mobile logo */}
+            <a href="/" className="lg:hidden flex items-center gap-2">
+              <Zap className="w-5 h-5" />
+            </a>
           </div>
         </div>
 
-        <div className="p-8 max-w-3xl">
+        <div className="p-4 lg:p-8 max-w-3xl">
           {/* Status Messages */}
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg mb-6">
@@ -945,24 +987,24 @@ function DashboardContent() {
               />
 
               {/* Daily Reply Pack Status */}
-              <Card className="bg-gradient-to-br from-yellow-500/10 to-orange-500/5 border-yellow-500/20 p-5 mb-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
-                    <Zap className="w-5 h-5 text-yellow-400" />
+              <Card className="bg-gradient-to-br from-yellow-500/10 to-orange-500/5 border-yellow-500/20 p-4 lg:p-5 mb-6">
+                <div className="flex items-start gap-3 lg:gap-4">
+                  <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
+                    <Zap className="w-4 h-4 lg:w-5 lg:h-5 text-yellow-400" />
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-medium mb-3">Daily Reply Pack</h3>
-                    <div className="text-sm text-gray-300 space-y-1 mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium mb-2 lg:mb-3 text-sm lg:text-base">Daily Reply Pack</h3>
+                    <div className="text-xs lg:text-sm text-gray-300 space-y-1 mb-2 lg:mb-3">
                       <p><span className="text-gray-500">Delivery:</span> Every day at {formatTimeWithTimezone(utcToHour(deliveryHourUtc, selectedTimezone), selectedTimezone)}</p>
                       <p><span className="text-gray-500">Next:</span> {getNextDelivery(deliveryHourUtc, selectedTimezone)}</p>
                     </div>
-                    <p className="text-sm text-gray-400 mb-3">
+                    <p className="text-xs lg:text-sm text-gray-400 mb-2 lg:mb-3">
                       Your reply pack lands in your inbox every morning. Automatic.
                     </p>
                     <button
                       onClick={handleTestDigest}
                       disabled={sendingDigest}
-                      className="text-sm text-yellow-400 hover:text-yellow-300 transition-colors disabled:opacity-50"
+                      className="text-xs lg:text-sm text-yellow-400 hover:text-yellow-300 transition-colors disabled:opacity-50"
                     >
                       {sendingDigest ? 'Sending...' : "Can't wait? → Run Now"}
                     </button>
@@ -970,21 +1012,21 @@ function DashboardContent() {
                 </div>
               </Card>
 
-              <Card className="bg-gradient-to-br from-white/[0.08] to-white/[0.03] border-white/10 p-8">
+              <Card className="bg-gradient-to-br from-white/[0.08] to-white/[0.03] border-white/10 p-4 lg:p-8">
                 {/* Header */}
-                <div className="flex items-start justify-between mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-md bg-white/5 border border-white/10">
+                    <div className="p-2 rounded-md bg-white/5 border border-white/10 flex-shrink-0">
                       <X className="w-5 h-5 text-blue-500" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-medium">Monitored Accounts</h3>
-                      <p className="text-sm text-gray-400 mt-0.5">
+                      <h3 className="text-base lg:text-lg font-medium">Monitored Accounts</h3>
+                      <p className="text-xs lg:text-sm text-gray-400 mt-0.5">
                         We&apos;ll find reply opportunities from these accounts
                       </p>
                     </div>
                   </div>
-                  <div className="text-right flex items-center gap-3">
+                  <div className="text-left sm:text-right flex items-center gap-3">
                     {accounts.length > 0 && (
                       <button
                         onClick={handleRefreshAccounts}
@@ -1050,7 +1092,7 @@ function DashboardContent() {
 
                 {/* Add Account Input */}
                 <div className="space-y-3">
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <input
                       type="text"
                       value={accountInput}
@@ -1063,22 +1105,24 @@ function DashboardContent() {
                       disabled={isLimitReached}
                       className="flex-1 px-4 py-2.5 bg-white/5 border border-white/10 rounded-md text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     />
-                    <button
-                      onClick={handleAddAccount}
-                      disabled={isLimitReached}
-                      className="px-4 py-2.5 bg-blue-500 hover:bg-blue-600 disabled:bg-white/5 disabled:text-gray-500 disabled:cursor-not-allowed rounded-md text-sm font-medium transition-colors flex items-center gap-2"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add
-                    </button>
-                    <button
-                      onClick={() => setShowImportModal(true)}
-                      disabled={isLimitReached}
-                      className="px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 disabled:opacity-50 disabled:cursor-not-allowed rounded-md text-sm font-medium transition-colors flex items-center gap-2"
-                    >
-                      <Download className="w-4 h-4" />
-                      Import
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleAddAccount}
+                        disabled={isLimitReached}
+                        className="flex-1 sm:flex-none px-4 py-2.5 bg-blue-500 hover:bg-blue-600 disabled:bg-white/5 disabled:text-gray-500 disabled:cursor-not-allowed rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Add
+                      </button>
+                      <button
+                        onClick={() => setShowImportModal(true)}
+                        disabled={isLimitReached}
+                        className="flex-1 sm:flex-none px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 disabled:opacity-50 disabled:cursor-not-allowed rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Download className="w-4 h-4" />
+                        Import
+                      </button>
+                    </div>
                   </div>
 
                   {/* Error Message */}
@@ -1334,19 +1378,19 @@ function DashboardContent() {
                   />
 
                   {/* Voice Confidence Card */}
-                  <Card className="bg-gradient-to-br from-purple-500/10 to-blue-500/5 border-purple-500/20 p-5 mb-6">
-                    <div className="flex items-start gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
-                        <Sparkles className="w-5 h-5 text-purple-400" />
+                  <Card className="bg-gradient-to-br from-purple-500/10 to-blue-500/5 border-purple-500/20 p-4 lg:p-5 mb-6">
+                    <div className="flex items-start gap-3 lg:gap-4">
+                      <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-lg bg-purple-500/20 flex items-center justify-center flex-shrink-0">
+                        <Sparkles className="w-4 h-4 lg:w-5 lg:h-5 text-purple-400" />
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-medium">Style Match</h3>
-                          <span className={`text-xl font-bold ${voiceConfidence >= 70 ? 'text-green-400' : voiceConfidence >= 40 ? 'text-yellow-400' : 'text-gray-400'}`}>
+                          <h3 className="font-medium text-sm lg:text-base">Style Match</h3>
+                          <span className={`text-lg lg:text-xl font-bold ${voiceConfidence >= 70 ? 'text-green-400' : voiceConfidence >= 40 ? 'text-yellow-400' : 'text-gray-400'}`}>
                             {voiceConfidence}%
                           </span>
                         </div>
-                        <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-3">
+                        <div className="h-2 bg-white/10 rounded-full overflow-hidden mb-2 lg:mb-3">
                           <div
                             className={`h-full transition-all duration-300 ${
                               voiceConfidence >= 70 ? 'bg-green-500' : voiceConfidence >= 40 ? 'bg-yellow-500' : 'bg-gray-500'
@@ -1354,7 +1398,7 @@ function DashboardContent() {
                             style={{ width: `${voiceConfidence}%` }}
                           />
                         </div>
-                        <p className="text-sm text-gray-400 mb-3">
+                        <p className="text-xs lg:text-sm text-gray-400 mb-2 lg:mb-3">
                           {voiceConfidence >= 70
                             ? 'Excellent! Your replies will closely match your style.'
                             : voiceConfidence >= 40
@@ -1364,70 +1408,70 @@ function DashboardContent() {
                         <Button
                           onClick={() => setShowVoiceWizard(true)}
                           variant="ghost"
-                          className="bg-purple-500 hover:bg-purple-600 text-white"
+                          className="bg-purple-500 hover:bg-purple-600 text-white text-xs lg:text-sm"
                           size="sm"
                         >
-                          <Sparkles className="w-4 h-4 mr-2" />
+                          <Sparkles className="w-3.5 h-3.5 lg:w-4 lg:h-4 mr-2" />
                           {voiceConfidence > 0 ? 'Improve Writing Style' : 'Set Up Writing Style'}
                         </Button>
                       </div>
                     </div>
                   </Card>
 
-                  <Card className="bg-white/5 border-white/10 p-6">
-                    <div className="space-y-5">
+                  <Card className="bg-white/5 border-white/10 p-4 lg:p-6">
+                    <div className="space-y-4 lg:space-y-5">
                       <div>
-                        <label className="block text-sm font-medium mb-2 text-gray-300">Name</label>
+                        <label className="block text-xs lg:text-sm font-medium mb-1.5 lg:mb-2 text-gray-300">Name</label>
                         <input
                           type="text"
                           value={displayName}
                           onChange={(e) => setDisplayName(e.target.value)}
                           placeholder="Your name"
-                          className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+                          className="w-full px-3 lg:px-4 py-2 lg:py-2.5 bg-white/5 border border-white/10 rounded-lg text-sm lg:text-base text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2 text-gray-300">Bio</label>
+                        <label className="block text-xs lg:text-sm font-medium mb-1.5 lg:mb-2 text-gray-300">Bio</label>
                         <textarea
                           value={bio}
                           onChange={(e) => setBio(e.target.value)}
                           placeholder="What do you do? (1-2 sentences)"
                           rows={2}
-                          className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+                          className="w-full px-3 lg:px-4 py-2 lg:py-2.5 bg-white/5 border border-white/10 rounded-lg text-sm lg:text-base text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2 text-gray-300">Expertise / Topics</label>
+                        <label className="block text-xs lg:text-sm font-medium mb-1.5 lg:mb-2 text-gray-300">Expertise / Topics</label>
                         <input
                           type="text"
                           value={expertise}
                           onChange={(e) => setExpertise(e.target.value)}
                           placeholder="startups, design, finance, etc."
-                          className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+                          className="w-full px-3 lg:px-4 py-2 lg:py-2.5 bg-white/5 border border-white/10 rounded-lg text-sm lg:text-base text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2 text-gray-300">Tone / Style</label>
+                        <label className="block text-xs lg:text-sm font-medium mb-1.5 lg:mb-2 text-gray-300">Tone / Style</label>
                         <input
                           type="text"
                           value={tone}
                           onChange={(e) => setTone(e.target.value)}
                           placeholder="casual, helpful, friendly"
-                          className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+                          className="w-full px-3 lg:px-4 py-2 lg:py-2.5 bg-white/5 border border-white/10 rounded-lg text-sm lg:text-base text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
                         />
                       </div>
 
                       <div>
-                        <label className="block text-sm font-medium mb-2 text-gray-300">Example Replies (optional)</label>
+                        <label className="block text-xs lg:text-sm font-medium mb-1.5 lg:mb-2 text-gray-300">Example Replies (optional)</label>
                         <textarea
                           value={exampleReplies}
                           onChange={(e) => setExampleReplies(e.target.value)}
                           placeholder="Paste 2-3 replies you've written to help match your style"
                           rows={4}
-                          className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
+                          className="w-full px-3 lg:px-4 py-2 lg:py-2.5 bg-white/5 border border-white/10 rounded-lg text-sm lg:text-base text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
                         />
                       </div>
 
@@ -1439,7 +1483,7 @@ function DashboardContent() {
                           onChange={(e) => setSkipPolitical(e.target.checked)}
                           className="w-4 h-4 rounded border-white/20 bg-white/5"
                         />
-                        <label htmlFor="skipPolitical" className="text-sm text-gray-300">
+                        <label htmlFor="skipPolitical" className="text-xs lg:text-sm text-gray-300">
                           Skip political content
                         </label>
                       </div>
@@ -1466,22 +1510,22 @@ function DashboardContent() {
                 description="Choose when you want to receive your daily digest."
               />
 
-              <Card className="bg-white/5 border-white/10 p-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center flex-shrink-0">
-                    <Clock className="w-5 h-5 text-purple-400" />
+              <Card className="bg-white/5 border-white/10 p-4 lg:p-6">
+                <div className="flex items-start gap-3 lg:gap-4">
+                  <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-lg bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+                    <Clock className="w-4 h-4 lg:w-5 lg:h-5 text-purple-400" />
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-medium mb-1">Daily Digest Time</h3>
-                    <p className="text-sm text-gray-400 mb-4">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-medium mb-1 text-sm lg:text-base">Daily Digest Time</h3>
+                    <p className="text-xs lg:text-sm text-gray-400 mb-3 lg:mb-4">
                       Select what time and timezone works best for you.
                     </p>
 
-                    <div className="flex flex-wrap gap-3 mb-4">
+                    <div className="flex flex-col sm:flex-row gap-2 lg:gap-3 mb-3 lg:mb-4">
                       <select
                         value={selectedHour}
                         onChange={(e) => setSelectedHour(parseInt(e.target.value))}
-                        className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white/20"
+                        className="px-3 lg:px-4 py-2 lg:py-2.5 bg-white/5 border border-white/10 rounded-lg text-sm lg:text-base text-white focus:outline-none focus:ring-2 focus:ring-white/20"
                       >
                         {timeOptions.map((option) => (
                           <option key={option.hour} value={option.hour} className="bg-black">
@@ -1493,7 +1537,7 @@ function DashboardContent() {
                       <select
                         value={selectedTimezone}
                         onChange={(e) => setSelectedTimezone(parseFloat(e.target.value))}
-                        className="px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white/20"
+                        className="px-3 lg:px-4 py-2 lg:py-2.5 bg-white/5 border border-white/10 rounded-lg text-sm lg:text-base text-white focus:outline-none focus:ring-2 focus:ring-white/20"
                       >
                         {TIMEZONES.map((tz) => (
                           <option key={tz.value} value={tz.value} className="bg-black">
@@ -1503,14 +1547,14 @@ function DashboardContent() {
                       </select>
                     </div>
 
-                    <div className="text-sm text-gray-500 mb-4">
+                    <div className="text-xs lg:text-sm text-gray-500 mb-3 lg:mb-4">
                       Currently set to: <span className="text-white">{formatTimeWithTimezone(utcToHour(deliveryHourUtc, selectedTimezone), selectedTimezone)}</span>
                     </div>
 
                     <Button
                       onClick={handleSaveDeliveryTime}
                       disabled={loading}
-                      className="bg-white text-black hover:bg-gray-200"
+                      className="bg-white text-black hover:bg-gray-200 text-sm"
                     >
                       {loading ? 'Saving...' : 'Save Time'}
                     </Button>
