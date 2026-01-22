@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 function SuccessContent() {
@@ -15,8 +15,47 @@ function SuccessContent() {
   const [exampleReplies, setExampleReplies] = useState('');
   const [accounts, setAccounts] = useState('');
   const [loading, setLoading] = useState(false);
+  const [verifying, setVerifying] = useState(true);
+  const [verified, setVerified] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+
+  // Verify checkout session and recover user if webhook failed
+  useEffect(() => {
+    if (!sessionId) {
+      setVerifying(false);
+      setError('No checkout session found. Please try again or contact support.');
+      return;
+    }
+
+    async function verifyCheckout() {
+      try {
+        const response = await fetch('/api/verify-checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId }),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Verification failed');
+        }
+
+        setEmail(data.email);
+        setVerified(true);
+        if (data.recovered) {
+          console.log('User recovered from webhook failure');
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Verification failed. Please contact support.');
+      } finally {
+        setVerifying(false);
+      }
+    }
+
+    verifyCheckout();
+  }, [sessionId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,6 +129,35 @@ function SuccessContent() {
     );
   }
 
+  if (verifying) {
+    return (
+      <main className="min-h-screen flex items-center justify-center px-6">
+        <div className="text-center">
+          <div className="text-gray-500 mb-2">Verifying your payment...</div>
+        </div>
+      </main>
+    );
+  }
+
+  if (!verified && error) {
+    return (
+      <main className="min-h-screen flex items-center justify-center px-6">
+        <div className="max-w-md text-center">
+          <div className="text-5xl mb-6">&#9888;</div>
+          <h1 className="text-2xl font-bold mb-4">Something went wrong</h1>
+          <p className="text-gray-600 mb-6">{error}</p>
+          <p className="text-sm text-gray-500">
+            Please contact{' '}
+            <a href="mailto:josh@xeroscroll.com" className="text-blue-600 hover:underline">
+              josh@xeroscroll.com
+            </a>{' '}
+            with your payment confirmation.
+          </p>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen flex items-center justify-center px-6">
       <div className="max-w-md w-full">
@@ -107,14 +175,9 @@ function SuccessContent() {
               type="email"
               id="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
-              className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-black"
+              readOnly
+              className="w-full px-4 py-3 border rounded-lg bg-gray-50 text-gray-600"
             />
-            <p className="text-sm text-gray-500 mt-1">
-              Use the same email you used for checkout
-            </p>
           </div>
 
           <hr className="my-6" />

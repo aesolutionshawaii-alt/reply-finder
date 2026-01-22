@@ -19,6 +19,8 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    console.log(`Webhook received: ${event.type}`);
+
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object;
@@ -26,10 +28,16 @@ export async function POST(request: NextRequest) {
         const customerId = session.customer as string;
         const subscriptionId = session.subscription as string;
 
-        if (email && customerId && subscriptionId) {
-          await createUser(email, customerId, subscriptionId);
-          console.log(`Created user: ${email}`);
+        console.log('Checkout completed:', { email, customerId, subscriptionId, sessionId: session.id });
+
+        if (!email || !customerId || !subscriptionId) {
+          console.error('Missing required data in checkout session:', { email, customerId, subscriptionId });
+          // Return 200 anyway - Stripe shouldn't retry, and we have recovery via verify-checkout
+          break;
         }
+
+        await createUser(email, customerId, subscriptionId);
+        console.log(`Created user: ${email}`);
         break;
       }
 
