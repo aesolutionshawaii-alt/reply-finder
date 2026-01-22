@@ -679,29 +679,44 @@ function DashboardContent() {
                 description="Add X accounts you want to monitor for reply opportunities."
               />
 
-              <Card className="bg-white/5 border-white/10 p-6">
+              <Card className="bg-gradient-to-br from-white/[0.08] to-white/[0.03] border-white/10 p-8">
+                <div className="flex items-start gap-4 mb-6">
+                  <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                    <Users className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium mb-1">X Accounts to Monitor</h3>
+                    <p className="text-sm text-gray-400">
+                      We&apos;ll find the best reply opportunities from these accounts.
+                    </p>
+                  </div>
+                </div>
+
                 <textarea
                   value={accounts}
                   onChange={(e) => setAccounts(e.target.value)}
-                  placeholder={userData?.plan === 'free' ? 'elonmusk' : 'elonmusk\nsamaltman\nlevelsio'}
-                  rows={userData?.plan === 'free' ? 2 : 6}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 font-mono text-sm mb-4"
+                  placeholder={userData?.plan === 'free' ? 'elonmusk' : 'elonmusk\nsamaltman\nlevelsio\nbalajis\nnaval'}
+                  rows={userData?.plan === 'free' ? 3 : 8}
+                  className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-lg text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 font-mono text-sm mb-4 transition-all"
                 />
-                <p className="text-sm text-gray-500 mb-4">
-                  One account per line (max {userData?.plan === 'free' ? '1' : '10'}). No @ needed.
-                  {userData?.plan === 'free' && (
-                    <span className="block mt-1">
-                      <a href="/#pricing" className="text-white underline">Upgrade to Pro</a> for 10 accounts.
-                    </span>
-                  )}
-                </p>
-                <Button
-                  onClick={handleSaveAccounts}
-                  disabled={loading}
-                  className="bg-white text-black hover:bg-gray-200"
-                >
-                  {loading ? 'Saving...' : 'Save Accounts'}
-                </Button>
+
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-500">
+                    One handle per line (max {userData?.plan === 'free' ? '1' : '10'})
+                    {userData?.plan === 'free' && (
+                      <span className="ml-2">
+                        · <a href="/#pricing" className="text-blue-400 hover:text-blue-300 transition-colors">Upgrade to Pro</a>
+                      </span>
+                    )}
+                  </p>
+                  <Button
+                    onClick={handleSaveAccounts}
+                    disabled={loading}
+                    className="bg-white text-black hover:bg-gray-200"
+                  >
+                    {loading ? 'Saving...' : 'Save Accounts'}
+                  </Button>
+                </div>
               </Card>
             </div>
           )}
