@@ -141,7 +141,7 @@ export interface FollowingResult {
 export async function fetchUserFollowing(handle: string, count: number = 100): Promise<FollowingResult> {
   try {
     const response = await fetch(
-      `${API_BASE}/user/following?userName=${handle}&count=${count}`,
+      `${API_BASE}/user/followings?userName=${handle}&count=${count}`,
       {
         headers: {
           'X-API-Key': getApiKey(),
@@ -156,14 +156,14 @@ export async function fetchUserFollowing(handle: string, count: number = 100): P
     }
 
     const data = await response.json();
-    const following = data.following || data.data?.following || [];
+    const following = data.followings || data.following || data.data?.followings || [];
 
     const accounts: FollowingAccount[] = following.map((user: Record<string, unknown>) => ({
-      userName: (user.userName || user.username || user.screen_name || '') as string,
+      userName: (user.userName || user.screen_name || user.username || '') as string,
       name: (user.name || '') as string,
-      profilePicture: (user.profilePicture || user.profile_image_url || '') as string,
+      profilePicture: (user.profile_image_url_https || user.profilePicture || user.profile_image_url || '') as string,
       isVerified: !!(user.isBlueVerified || user.isVerified || user.verified),
-      followers: (user.followers || user.followers_count || 0) as number,
+      followers: (user.followers_count || user.followers || 0) as number,
     }));
 
     return { accounts };
