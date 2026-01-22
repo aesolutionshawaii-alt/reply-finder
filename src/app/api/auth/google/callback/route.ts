@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserByEmail, getUserByGoogleId, createUserWithGoogle, linkGoogleId, createSession } from '../../../../../../lib/db';
-import { generateToken, setSessionCookie } from '../../../../../../lib/auth';
+import { generateToken } from '../../../../../../lib/auth';
 
 interface GoogleTokenResponse {
   access_token: string;
@@ -99,10 +99,17 @@ export async function GET(request: NextRequest) {
     // Create session
     const sessionToken = generateToken();
     await createSession(user.id, sessionToken, 30);
-    await setSessionCookie(sessionToken);
 
-    // Redirect to dashboard
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    // Redirect to dashboard with cookie set on response
+    const response = NextResponse.redirect(new URL('/dashboard', request.url));
+    response.cookies.set('xs_session', sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60, // 30 days
+      path: '/',
+    });
+    return response;
   } catch (err) {
     console.error('Google OAuth callback error:', err);
     return NextResponse.redirect(new URL('/dashboard?error=callback_failed', request.url));
