@@ -239,21 +239,21 @@ export default function Home() {
             <p className="text-gray-400 text-lg">Start free, upgrade when you&apos;re ready</p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
             >
-              <Card className="py-16 px-12 bg-white/5 border-white/10 h-full min-h-[500px]">
-                <div className="mb-8">
+              <Card className="p-8 bg-white/5 border-white/10 h-[493px] flex flex-col">
+                <div className="mb-6">
                   <h3 className="text-2xl font-semibold mb-2">Free</h3>
                   <div className="text-4xl font-bold mb-1">$0</div>
                   <p className="text-gray-400">Forever free</p>
                 </div>
 
-                <ul className="space-y-4 mb-10">
+                <ul className="space-y-4 mb-8">
                   <li className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                     <span className="text-gray-300">1 account to monitor</span>
@@ -268,7 +268,7 @@ export default function Home() {
                   </li>
                 </ul>
 
-                <a href="/signup">
+                <a href="/signup" className="mt-auto">
                   <Button variant="default" className="w-full">
                     Get Started
                   </Button>
@@ -282,14 +282,14 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
             >
-              <Card className="py-16 px-12 bg-white text-black h-full min-h-[500px] relative overflow-hidden">
+              <Card className="p-8 bg-white text-black h-[493px] flex flex-col relative overflow-hidden">
                 <div className="absolute top-4 right-4">
                   <div className="px-3 py-1 bg-black/10 rounded-full text-xs font-medium">
                     POPULAR
                   </div>
                 </div>
 
-                <div className="mb-8">
+                <div className="mb-6">
                   <h3 className="text-2xl font-semibold mb-2">Pro</h3>
                   <div className="flex items-baseline gap-2 mb-1">
                     <span className="text-4xl font-bold">$29</span>
@@ -298,7 +298,7 @@ export default function Home() {
                   <p className="text-gray-600">Everything you need to grow</p>
                 </div>
 
-                <ul className="space-y-4 mb-10">
+                <ul className="space-y-4 mb-8">
                   <li className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-black mt-0.5 flex-shrink-0" />
                     <span>10 accounts to monitor</span>
@@ -317,7 +317,7 @@ export default function Home() {
                   </li>
                 </ul>
 
-                <a href="/api/checkout">
+                <a href="/api/checkout" className="mt-auto">
                   <Button className="w-full bg-black text-white hover:bg-black/90 gap-2">
                     Start Pro
                     <ArrowRight className="w-4 h-4" />
