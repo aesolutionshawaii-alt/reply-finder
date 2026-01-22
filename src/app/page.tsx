@@ -21,7 +21,7 @@ export default function Home() {
               Pricing
             </a>
             <a href="/dashboard">
-              <button className="px-5 py-2 text-base font-medium border border-white/40 rounded-lg hover:bg-white/5 transition-colors">
+              <button className="px-6 py-2.5 text-base font-medium bg-white text-black rounded-xl hover:bg-gray-100 transition-colors">
                 Sign In
               </button>
             </a>
