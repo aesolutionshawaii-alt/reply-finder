@@ -1,11 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { inngest } from '../../../../lib/inngest';
-import { getUserByEmail, getMonitoredAccounts, getUserProfile, logEmail } from '../../../../lib/db';
+import { getUserByEmail, getMonitoredAccounts, getUserProfile, logEmail, getActiveUsersByDeliveryHour } from '../../../../lib/db';
 import { findOpportunities } from '../../../../lib/reply-finder';
 import { sendDigestEmail } from '../../../../lib/email';
 import { requireAuth, checkRateLimit, getClientIP } from '../../../../lib/auth';
 
 export const maxDuration = 300; // 5 minutes for Vercel Pro
+
+// Process a single user's digest directly (fallback when Inngest unavailable)
+async function processUserDigest(userId: number, email: string): Promise<{ status: string; opportunities?: number; error?: string }> {
+  try {
+    const accounts = await getMonitoredAccounts(userId);
+    if (accounts.length === 0) {
+      return { status: 'skipped', error: 'no_accounts' };
+    }
+
+    const userProfile = await getUserProfile(userId);
+    const skipPolitical = userProfile?.skip_political ?? true;
+
+    const opportunities = await findOpportunities(accounts, userProfile, 10, skipPolitical);
+
+    if (opportunities.length === 0) {
+      await logEmail(userId, 0, 'no_opportunities');
+      return { status: 'skipped', error: 'no_opportunities' };
+    }
+
+    const { success, error } = await sendDigestEmail(email, opportunities);
+
+    if (success) {
+      await logEmail(userId, opportunities.length, 'sent');
+      return { status: 'sent', opportunities: opportunities.length };
+    } else {
+      await logEmail(userId, opportunities.length, 'failed');
+      return { status: 'failed', error };
+    }
+  } catch (err) {
+    console.error(`Error processing digest for ${email}:`, err);
+    return { status: 'failed', error: String(err) };
+  }
+}
 
 export async function GET(request: NextRequest) {
   const testEmail = request.nextUrl.searchParams.get('email');
@@ -76,15 +109,66 @@ export async function GET(request: NextRequest) {
     }
 
     const currentHourUtc = new Date().getUTCHours();
+    const useFallback = request.nextUrl.searchParams.get('fallback') === 'true';
 
-    await inngest.send({
-      name: 'digest/trigger-all',
-      data: { hourUtc: currentHourUtc },
-    });
+    // Try Inngest first (unless fallback is forced)
+    if (!useFallback) {
+      try {
+        await inngest.send({
+          name: 'digest/trigger-all',
+          data: { hourUtc: currentHourUtc },
+        });
+
+        return NextResponse.json({
+          success: true,
+          method: 'inngest',
+          message: `Triggered digest processing for users scheduled at UTC hour ${currentHourUtc}`,
+        });
+      } catch (inngestError) {
+        console.error('Inngest failed, falling back to direct processing:', inngestError);
+        // Fall through to direct processing
+      }
+    }
+
+    // Fallback: Process users directly
+    console.log(`Processing digests directly for UTC hour ${currentHourUtc}`);
+
+    const users = await getActiveUsersByDeliveryHour(currentHourUtc);
+
+    if (users.length === 0) {
+      return NextResponse.json({
+        success: true,
+        method: 'direct',
+        message: `No users scheduled for UTC hour ${currentHourUtc}`,
+        processed: 0,
+      });
+    }
+
+    // Process users sequentially to avoid rate limits
+    let sent = 0;
+    let failed = 0;
+    let skipped = 0;
+
+    for (const user of users) {
+      const result = await processUserDigest(user.id, user.email);
+      if (result.status === 'sent') sent++;
+      else if (result.status === 'failed') failed++;
+      else skipped++;
+
+      // Small delay between users to avoid rate limits
+      if (users.indexOf(user) < users.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
 
     return NextResponse.json({
       success: true,
-      message: `Triggered digest processing for users scheduled at UTC hour ${currentHourUtc}`,
+      method: 'direct',
+      message: `Processed ${users.length} users directly`,
+      processed: users.length,
+      sent,
+      failed,
+      skipped,
     });
   } catch (err) {
     console.error('Cron error:', err);
