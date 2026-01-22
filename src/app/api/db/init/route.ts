@@ -141,6 +141,18 @@ export async function GET() {
       ADD COLUMN IF NOT EXISTS profile_picture TEXT
     `;
 
+    // Tweet cache for reducing API calls
+    await sql`
+      CREATE TABLE IF NOT EXISTS tweet_cache (
+        id SERIAL PRIMARY KEY,
+        handle VARCHAR(255) UNIQUE NOT NULL,
+        tweets JSONB NOT NULL,
+        fetched_at TIMESTAMP DEFAULT NOW()
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_tweet_cache_handle ON tweet_cache(handle)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_tweet_cache_fetched ON tweet_cache(fetched_at)`;
+
     // Create indexes
     await sql`CREATE INDEX IF NOT EXISTS idx_cron_runs_started ON cron_runs(started_at DESC)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`;

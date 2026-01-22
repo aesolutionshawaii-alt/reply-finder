@@ -507,3 +507,53 @@ export async function getAdminStats(): Promise<{
     pastDueUsers: totals.past_due_users,
   };
 }
+
+// ============ TWEET CACHE ============
+
+export interface TweetCache {
+  id: number;
+  handle: string;
+  tweets: unknown[];
+  fetched_at: Date;
+}
+
+const CACHE_TTL_MINUTES = 60; // Cache expires after 1 hour
+
+export async function getCachedTweets(handle: string): Promise<unknown[] | null> {
+  const sql = getDb();
+  const cutoffTime = new Date(Date.now() - CACHE_TTL_MINUTES * 60 * 1000);
+  const result = await sql`
+    SELECT tweets, fetched_at
+    FROM tweet_cache
+    WHERE handle = ${handle.toLowerCase()}
+      AND fetched_at > ${cutoffTime}
+  `;
+
+  if (result.length === 0) {
+    return null; // Cache miss
+  }
+
+  return result[0].tweets as unknown[];
+}
+
+export async function setCachedTweets(handle: string, tweets: unknown[]): Promise<void> {
+  const sql = getDb();
+  await sql`
+    INSERT INTO tweet_cache (handle, tweets, fetched_at)
+    VALUES (${handle.toLowerCase()}, ${JSON.stringify(tweets)}, NOW())
+    ON CONFLICT (handle) DO UPDATE SET
+      tweets = ${JSON.stringify(tweets)},
+      fetched_at = NOW()
+  `;
+}
+
+export async function cleanupExpiredTweetCache(): Promise<number> {
+  const sql = getDb();
+  const cutoffTime = new Date(Date.now() - CACHE_TTL_MINUTES * 60 * 1000);
+  const result = await sql`
+    DELETE FROM tweet_cache
+    WHERE fetched_at < ${cutoffTime}
+    RETURNING id
+  `;
+  return result.length;
+}

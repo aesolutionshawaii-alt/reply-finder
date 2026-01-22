@@ -1,3 +1,5 @@
+import { getCachedTweets, setCachedTweets } from './db';
+
 const API_BASE = 'https://api.twitterapi.io/twitter';
 
 export interface Tweet {
@@ -30,8 +32,23 @@ function getApiKey(): string {
   return apiKey;
 }
 
-export async function fetchAccountTweets(handle: string, count: number = 10): Promise<FetchResult> {
+export async function fetchAccountTweets(handle: string, count: number = 10, useCache: boolean = true): Promise<FetchResult> {
   try {
+    // Check cache first (if enabled)
+    if (useCache) {
+      try {
+        const cachedTweets = await getCachedTweets(handle);
+        if (cachedTweets && cachedTweets.length > 0) {
+          console.log(`Cache hit for @${handle} (${cachedTweets.length} tweets)`);
+          return { tweets: cachedTweets as Tweet[] };
+        }
+      } catch (cacheError) {
+        // Cache error shouldn't block API call
+        console.error(`Cache read error for @${handle}:`, cacheError);
+      }
+    }
+
+    // Cache miss or disabled - fetch from API
     const response = await fetch(
       `${API_BASE}/user/last_tweets?userName=${handle}&count=${count}`,
       {
@@ -50,6 +67,14 @@ export async function fetchAccountTweets(handle: string, count: number = 10): Pr
     const data = await response.json();
     const tweets = data.tweets || data.data?.tweets || [];
 
+    // Save to cache (async, don't wait)
+    if (useCache && tweets.length > 0) {
+      setCachedTweets(handle, tweets).catch(err => {
+        console.error(`Cache write error for @${handle}:`, err);
+      });
+    }
+
+    console.log(`API fetch for @${handle} (${tweets.length} tweets)`);
     return { tweets };
   } catch (error) {
     return { tweets: [], error: String(error) };
