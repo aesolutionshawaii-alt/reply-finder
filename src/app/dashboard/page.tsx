@@ -332,6 +332,7 @@ function DashboardContent() {
 
   const handleManageSubscription = async () => {
     setSubscriptionLoading(true);
+    setError('');
     try {
       const response = await fetch('/api/billing/portal', {
         method: 'POST',
@@ -339,11 +340,17 @@ function DashboardContent() {
         body: JSON.stringify({ email }),
       });
       const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to open billing portal');
+      }
       if (data.url) {
         window.location.href = data.url;
+      } else {
+        throw new Error('No portal URL returned');
       }
     } catch (err) {
       console.error('Failed to open billing portal:', err);
+      setError(err instanceof Error ? err.message : 'Failed to open billing portal');
     } finally {
       setSubscriptionLoading(false);
     }
