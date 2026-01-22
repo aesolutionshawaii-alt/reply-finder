@@ -347,10 +347,10 @@ export default function Home() {
             </p>
 
             <a href="/signup">
-              <Button className="bg-white text-black hover:bg-gray-200 gap-2 px-8 py-6 text-lg">
+              <button className="bg-white text-black hover:bg-gray-200 inline-flex items-center gap-3 px-16 py-6 text-xl font-medium rounded-2xl transition-colors">
                 Get started for free
-                <ArrowRight className="w-5 h-5" />
-              </Button>
+                <ArrowRight className="w-6 h-6" />
+              </button>
             </a>
           </motion.div>
         </div>
