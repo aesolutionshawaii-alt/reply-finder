@@ -8,7 +8,7 @@ import { Card } from './components/ui/card';
 export default function Home() {
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-black text-white overflow-x-hidden">
       {/* Navigation */}
       <nav className="border-b border-white/10 bg-black/50 backdrop-blur-xl fixed top-0 w-full z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
@@ -42,7 +42,7 @@ export default function Home() {
               <span className="text-sm text-gray-300">AI-powered growth without the scroll</span>
             </div>
 
-            <h1 className="text-6xl md:text-7xl lg:text-8xl font-bold mb-6 tracking-tight">
+            <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold mb-6 tracking-tight">
               Grow on X
               <br />
               <span className="text-gray-500">without scrolling</span>
