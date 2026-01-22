@@ -32,6 +32,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (err) {
     console.error('Free signup error:', err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to create account' }, { status: 500 });
   }
 }

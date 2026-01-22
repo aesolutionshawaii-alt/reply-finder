@@ -39,6 +39,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (err) {
     console.error('Dashboard user error:', err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to load user data' }, { status: 500 });
   }
 }

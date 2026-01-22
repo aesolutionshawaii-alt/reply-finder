@@ -70,8 +70,6 @@ export async function POST(request: NextRequest) {
 
   } catch (err) {
     console.error('Verify checkout error:', err);
-    return NextResponse.json({
-      error: err instanceof Error ? err.message : 'Verification failed'
-    }, { status: 500 });
+    return NextResponse.json({ error: 'Verification failed' }, { status: 500 });
   }
 }

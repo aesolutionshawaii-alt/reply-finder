@@ -117,44 +117,31 @@ export async function checkRateLimit(
   const sql = getDb();
   const windowStart = new Date(Date.now() - windowSeconds * 1000);
 
-  // Try to get existing rate limit record
-  const existing = await sql`
-    SELECT * FROM rate_limits
-    WHERE key = ${key} AND window_start > ${windowStart}
+  // Atomic upsert: increment count and return new value in single query
+  // This eliminates the race condition between check and update
+  const result = await sql`
+    INSERT INTO rate_limits (key, count, window_start)
+    VALUES (${key}, 1, NOW())
+    ON CONFLICT (key) DO UPDATE SET
+      count = CASE
+        WHEN rate_limits.window_start <= ${windowStart} THEN 1
+        ELSE rate_limits.count + 1
+      END,
+      window_start = CASE
+        WHEN rate_limits.window_start <= ${windowStart} THEN NOW()
+        ELSE rate_limits.window_start
+      END
+    RETURNING count, window_start
   `;
 
-  if (existing.length === 0) {
-    // No recent record, create new one
-    await sql`
-      INSERT INTO rate_limits (key, count, window_start)
-      VALUES (${key}, 1, NOW())
-      ON CONFLICT (key) DO UPDATE SET count = 1, window_start = NOW()
-    `;
-    return {
-      allowed: true,
-      remaining: limit - 1,
-      resetAt: new Date(Date.now() + windowSeconds * 1000),
-    };
-  }
-
-  const record = existing[0];
-  if (record.count >= limit) {
-    return {
-      allowed: false,
-      remaining: 0,
-      resetAt: new Date(new Date(record.window_start).getTime() + windowSeconds * 1000),
-    };
-  }
-
-  // Increment count
-  await sql`
-    UPDATE rate_limits SET count = count + 1 WHERE key = ${key}
-  `;
+  const record = result[0];
+  const newCount = record.count as number;
+  const recordWindowStart = new Date(record.window_start);
 
   return {
-    allowed: true,
-    remaining: limit - record.count - 1,
-    resetAt: new Date(new Date(record.window_start).getTime() + windowSeconds * 1000),
+    allowed: newCount <= limit,
+    remaining: Math.max(0, limit - newCount),
+    resetAt: new Date(recordWindowStart.getTime() + windowSeconds * 1000),
   };
 }
 

@@ -38,9 +38,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (err) {
     console.error('Following fetch error:', err);
-    return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Failed to fetch following' },
-      { status: 500 }
-    );
+    if (err instanceof Error && err.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    return NextResponse.json({ error: 'Failed to fetch following' }, { status: 500 });
   }
 }

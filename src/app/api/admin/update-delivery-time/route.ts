@@ -30,6 +30,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('Update delivery time error:', err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    if (err instanceof Error && err.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    return NextResponse.json({ error: 'Failed to update delivery time' }, { status: 500 });
   }
 }

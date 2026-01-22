@@ -64,6 +64,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (err) {
     console.error('Import voice error:', err);
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    if (err instanceof Error && err.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    return NextResponse.json({ error: 'Failed to import voice data' }, { status: 500 });
   }
 }
