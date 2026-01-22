@@ -340,11 +340,13 @@ function DashboardContent() {
         body: JSON.stringify({ email }),
       });
       const data = await response.json();
+      console.log('Billing portal response:', data);
       if (!response.ok) {
         throw new Error(data.error || 'Failed to open billing portal');
       }
       if (data.url) {
-        window.location.href = data.url;
+        console.log('Redirecting to:', data.url);
+        window.open(data.url, '_blank');
       } else {
         throw new Error('No portal URL returned');
       }
