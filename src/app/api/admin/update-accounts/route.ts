@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserByEmail, saveMonitoredAccounts } from '../../../../../lib/db';
 import { requireAuth, checkRateLimit, getClientIP } from '../../../../../lib/auth';
+import { fetchUserProfile } from '../../../../../lib/twitter';
 
 // Update monitored accounts for authenticated users
 export async function POST(request: NextRequest) {
@@ -29,16 +30,38 @@ export async function POST(request: NextRequest) {
 
     // Limit based on plan: free = 1, pro = 10
     const maxAccounts = user.plan === 'free' ? 1 : 10;
-    const cleanedAccounts = accounts.slice(0, maxAccounts).map((handle: string) => ({
-      handle: handle.replace(/^@/, '').trim(),
-    }));
+    const handles = accounts.slice(0, maxAccounts).map((handle: string) =>
+      handle.replace(/^@/, '').trim()
+    );
 
-    await saveMonitoredAccounts(user.id, cleanedAccounts);
+    // Fetch profile info for each account (verification status, display name)
+    const accountsWithProfiles = await Promise.all(
+      handles.map(async (handle) => {
+        try {
+          const profile = await fetchUserProfile(handle);
+          return {
+            handle,
+            name: profile?.name || undefined,
+            isVerified: profile?.isVerified || false,
+            profilePicture: profile?.profilePicture || undefined,
+          };
+        } catch {
+          // If fetch fails, save without profile info
+          return { handle, name: undefined, isVerified: false, profilePicture: undefined };
+        }
+      })
+    );
+
+    await saveMonitoredAccounts(user.id, accountsWithProfiles);
 
     return NextResponse.json({
       success: true,
-      message: `Saved ${cleanedAccounts.length} accounts`,
-      accounts: cleanedAccounts.map(a => a.handle)
+      message: `Saved ${accountsWithProfiles.length} accounts`,
+      accounts: accountsWithProfiles.map(a => ({
+        handle: a.handle,
+        name: a.name,
+        isVerified: a.isVerified,
+      }))
     });
   } catch (err) {
     console.error('Update accounts error:', err);

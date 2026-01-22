@@ -164,3 +164,18 @@ export function getClientIP(request: NextRequest): string {
     request.headers.get('x-real-ip') ||
     'unknown';
 }
+
+// ============ Admin Auth ============
+
+export function isAdmin(email: string): boolean {
+  const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(e => e.trim().toLowerCase()) || [];
+  return adminEmails.includes(email.toLowerCase());
+}
+
+export async function requireAdmin(request: NextRequest) {
+  const session = await requireAuth(request);
+  if (!isAdmin(session.email)) {
+    throw new Error('Not authorized');
+  }
+  return session;
+}

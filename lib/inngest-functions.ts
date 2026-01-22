@@ -1,7 +1,7 @@
 import { inngest } from './inngest';
-import { getActiveUsersByDeliveryHour, getMonitoredAccounts, getUserProfile, logEmail, MonitoredAccount, UserProfile } from './db';
+import { getActiveUsersByDeliveryHour, getMonitoredAccounts, getUserProfile, logEmail, MonitoredAccount, UserProfile, createCronRun, updateCronRun, getDb } from './db';
 import { findOpportunities } from './reply-finder';
-import { sendDigestEmail } from './email';
+import { sendDigestEmail, sendCronAlertEmail } from './email';
 
 // Function to process a single user's digest
 export const sendUserDigest = inngest.createFunction(
@@ -78,26 +78,133 @@ export const triggerAllDigests = inngest.createFunction(
   async ({ event, step }) => {
     const { hourUtc } = event.data;
 
-    // Get active users whose delivery time matches the current hour
-    const users = await step.run('get-users', async () => {
-      return getActiveUsersByDeliveryHour(hourUtc);
+    // Create cron run record
+    const cronRunId = await step.run('create-cron-run', async () => {
+      return createCronRun(hourUtc);
     });
 
-    console.log(`Triggering digests for ${users.length} users (hour UTC: ${hourUtc})`);
+    try {
+      // Get active users whose delivery time matches the current hour
+      const users = await step.run('get-users', async () => {
+        return getActiveUsersByDeliveryHour(hourUtc);
+      });
 
-    // Send an event for each user
-    await step.sendEvent(
-      'send-user-events',
-      users.map((user) => ({
-        name: 'digest/send' as const,
-        data: {
-          userId: user.id,
-          email: user.email,
-        },
-      }))
-    );
+      console.log(`Triggering digests for ${users.length} users (hour UTC: ${hourUtc})`);
 
-    return { triggered: users.length };
+      // Update cron run with users count
+      await step.run('update-cron-triggered', async () => {
+        await updateCronRun(cronRunId, { usersTriggered: users.length });
+      });
+
+      if (users.length === 0) {
+        // No users to process
+        await step.run('complete-empty-run', async () => {
+          await updateCronRun(cronRunId, {
+            status: 'completed',
+            usersTriggered: 0,
+            usersSent: 0,
+            usersFailed: 0,
+            usersSkipped: 0,
+          });
+        });
+
+        // Still send alert for visibility
+        await step.run('send-empty-alert', async () => {
+          await sendCronAlertEmail({
+            status: 'completed',
+            hourUtc,
+            usersTriggered: 0,
+            usersSent: 0,
+            usersFailed: 0,
+            usersSkipped: 0,
+          });
+        });
+
+        return { triggered: 0 };
+      }
+
+      // Send an event for each user
+      await step.sendEvent(
+        'send-user-events',
+        users.map((user) => ({
+          name: 'digest/send' as const,
+          data: {
+            userId: user.id,
+            email: user.email,
+          },
+        }))
+      );
+
+      // Wait for processing (allow time for all digests to complete)
+      // Individual digests take ~30s each, but they run in parallel
+      await step.sleep('wait-for-processing', '3m');
+
+      // Aggregate results from email_log
+      const results = await step.run('aggregate-results', async () => {
+        const sql = getDb();
+        // Get counts from the last 10 minutes
+        const [counts] = await sql`
+          SELECT
+            COUNT(*) FILTER (WHERE status = 'sent')::int as sent,
+            COUNT(*) FILTER (WHERE status = 'failed')::int as failed,
+            COUNT(*) FILTER (WHERE status = 'no_opportunities')::int as skipped
+          FROM email_log
+          WHERE sent_at > NOW() - INTERVAL '10 minutes'
+        `;
+        return {
+          sent: counts.sent || 0,
+          failed: counts.failed || 0,
+          skipped: counts.skipped || 0,
+        };
+      });
+
+      // Update cron run with results
+      await step.run('update-cron-complete', async () => {
+        await updateCronRun(cronRunId, {
+          status: 'completed',
+          usersSent: results.sent,
+          usersFailed: results.failed,
+          usersSkipped: results.skipped,
+        });
+      });
+
+      // Send admin alert
+      await step.run('send-alert', async () => {
+        await sendCronAlertEmail({
+          status: 'completed',
+          hourUtc,
+          usersTriggered: users.length,
+          usersSent: results.sent,
+          usersFailed: results.failed,
+          usersSkipped: results.skipped,
+        });
+      });
+
+      return { triggered: users.length, ...results };
+    } catch (error) {
+      // Log failure
+      await step.run('log-failure', async () => {
+        await updateCronRun(cronRunId, {
+          status: 'failed',
+          error: String(error),
+        });
+      });
+
+      // Send failure alert
+      await step.run('send-failure-alert', async () => {
+        await sendCronAlertEmail({
+          status: 'failed',
+          hourUtc,
+          usersTriggered: 0,
+          usersSent: 0,
+          usersFailed: 0,
+          usersSkipped: 0,
+          error: String(error),
+        });
+      });
+
+      throw error;
+    }
   }
 );
 

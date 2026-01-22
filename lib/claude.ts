@@ -50,10 +50,17 @@ Write a single reply tweet (max 280 chars) that:
 2. Matches ${user.displayName}'s tone: ${user.tone}
 3. Does NOT force in ${user.displayName}'s job or expertise unless it's genuinely relevant
 4. Just be a real person having a conversation
-5. Could be agreement, a question, a take, humor - whatever fits
 
-Bad: "As a marketing professional, I think..." (forced)
-Good: "This happened to me last week..." (natural)
+Critical rules:
+- DO NOT end with a question. Make a statement, share a perspective, or add something concrete.
+- NO hype words: "love this", "so true", "absolutely", "this is huge", "game changer"
+- Add substance - a specific observation, experience, or insight. Not just agreement.
+- Match normal conversational energy. Not everything is exciting.
+
+Bad: "Love this! What made you realize that?" (shallow + question + hype)
+Bad: "This is so true! Absolutely agree." (empty agreement + hype)
+Good: "Ran into this exact problem last month. Ended up just shipping it broken and fixing live." (specific, adds something)
+Good: "The hard part isn't the code, it's convincing stakeholders to wait." (perspective, no question)
 
 Reply only with the tweet text, no quotes, no explanation.`;
 

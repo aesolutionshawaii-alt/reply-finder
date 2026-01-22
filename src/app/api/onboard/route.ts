@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserByEmail, saveMonitoredAccounts, saveUserProfile } from '../../../../lib/db';
+import { fetchUserProfile } from '../../../../lib/twitter';
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,15 +39,30 @@ export async function POST(request: NextRequest) {
     }
 
     // Clean up handles (remove @ if present)
-    const cleanedAccounts = accounts.map((account: string | { handle: string }) => {
+    const handles = accounts.map((account: string | { handle: string }) => {
       const handle = typeof account === 'string' ? account : account.handle;
-      return {
-        handle: handle.replace(/^@/, '').trim(),
-      };
+      return handle.replace(/^@/, '').trim();
     });
 
+    // Fetch profile info for each account (verification status, display name)
+    const accountsWithProfiles = await Promise.all(
+      handles.map(async (handle) => {
+        try {
+          const profile = await fetchUserProfile(handle);
+          return {
+            handle,
+            name: profile?.name || undefined,
+            isVerified: profile?.isVerified || false,
+            profilePicture: profile?.profilePicture || undefined,
+          };
+        } catch {
+          return { handle, name: undefined, isVerified: false, profilePicture: undefined };
+        }
+      })
+    );
+
     // Save accounts
-    await saveMonitoredAccounts(user.id, cleanedAccounts);
+    await saveMonitoredAccounts(user.id, accountsWithProfiles);
 
     // Save profile if provided
     if (profile) {
@@ -61,8 +77,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Saved ${cleanedAccounts.length} accounts and profile`,
-      accounts: cleanedAccounts.map((a) => a.handle),
+      message: `Saved ${accountsWithProfiles.length} accounts and profile`,
+      accounts: accountsWithProfiles.map((a) => ({
+        handle: a.handle,
+        isVerified: a.isVerified,
+      })),
     });
   } catch (err) {
     console.error('Onboard error:', err);

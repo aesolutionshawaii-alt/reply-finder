@@ -27,6 +27,8 @@ export interface MonitoredAccount {
   handle: string;
   name: string | null;
   category: string | null;
+  is_verified: boolean;
+  profile_picture: string | null;
   created_at: Date;
 }
 
@@ -137,7 +139,7 @@ export async function updateUserDeliveryTime(userId: number, deliveryHourUtc: nu
   `;
 }
 
-export async function saveMonitoredAccounts(userId: number, accounts: { handle: string; name?: string; category?: string }[]): Promise<void> {
+export async function saveMonitoredAccounts(userId: number, accounts: { handle: string; name?: string; category?: string; isVerified?: boolean; profilePicture?: string }[]): Promise<void> {
   const sql = getDb();
 
   // Get existing accounts before deletion (for rollback if needed)
@@ -150,8 +152,8 @@ export async function saveMonitoredAccounts(userId: number, accounts: { handle: 
     // Insert new accounts
     for (const account of accounts) {
       await sql`
-        INSERT INTO monitored_accounts (user_id, handle, name, category)
-        VALUES (${userId}, ${account.handle}, ${account.name || null}, ${account.category || null})
+        INSERT INTO monitored_accounts (user_id, handle, name, category, is_verified, profile_picture)
+        VALUES (${userId}, ${account.handle}, ${account.name || null}, ${account.category || null}, ${account.isVerified || false}, ${account.profilePicture || null})
       `;
     }
   } catch (error) {
@@ -160,8 +162,8 @@ export async function saveMonitoredAccounts(userId: number, accounts: { handle: 
     for (const account of existingAccounts) {
       try {
         await sql`
-          INSERT INTO monitored_accounts (user_id, handle, name, category)
-          VALUES (${account.user_id}, ${account.handle}, ${account.name}, ${account.category})
+          INSERT INTO monitored_accounts (user_id, handle, name, category, is_verified, profile_picture)
+          VALUES (${account.user_id}, ${account.handle}, ${account.name}, ${account.category}, ${account.is_verified || false}, ${account.profile_picture})
           ON CONFLICT (user_id, handle) DO NOTHING
         `;
       } catch (restoreError) {
@@ -300,4 +302,208 @@ export async function cleanupExpiredTokens(): Promise<void> {
   const sql = getDb();
   await sql`DELETE FROM magic_links WHERE expires_at < NOW()`;
   await sql`DELETE FROM sessions WHERE expires_at < NOW()`;
+}
+
+// ============ ADMIN: User Management ============
+
+export interface UserWithStats {
+  id: number;
+  email: string;
+  plan: 'free' | 'pro';
+  status: 'active' | 'canceled' | 'past_due';
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  created_at: Date;
+  updated_at: Date;
+  accounts_count: number;
+  profile_complete: boolean;
+}
+
+export async function getAllUsersWithStats(): Promise<UserWithStats[]> {
+  const sql = getDb();
+  const result = await sql`
+    SELECT
+      u.id,
+      u.email,
+      u.plan,
+      u.status,
+      u.stripe_customer_id,
+      u.stripe_subscription_id,
+      u.created_at,
+      u.updated_at,
+      COUNT(DISTINCT ma.id)::int as accounts_count,
+      CASE WHEN up.id IS NOT NULL THEN true ELSE false END as profile_complete
+    FROM users u
+    LEFT JOIN monitored_accounts ma ON u.id = ma.user_id
+    LEFT JOIN user_profiles up ON u.id = up.user_id
+    GROUP BY u.id, up.id
+    ORDER BY u.created_at DESC
+  `;
+  return result as UserWithStats[];
+}
+
+export async function getUserById(id: number): Promise<User | null> {
+  const sql = getDb();
+  const result = await sql`SELECT * FROM users WHERE id = ${id}`;
+  return result[0] as User || null;
+}
+
+export async function updateUserPlan(userId: number, plan: 'free' | 'pro', status?: string): Promise<void> {
+  const sql = getDb();
+  if (status) {
+    await sql`
+      UPDATE users
+      SET plan = ${plan}, status = ${status}, updated_at = NOW()
+      WHERE id = ${userId}
+    `;
+  } else {
+    await sql`
+      UPDATE users
+      SET plan = ${plan}, updated_at = NOW()
+      WHERE id = ${userId}
+    `;
+  }
+}
+
+export async function deleteUser(userId: number): Promise<void> {
+  const sql = getDb();
+  // Foreign keys with ON DELETE CASCADE will handle related records
+  await sql`DELETE FROM users WHERE id = ${userId}`;
+}
+
+export interface EmailLogEntry {
+  id: number;
+  user_id: number;
+  user_email: string;
+  sent_at: Date;
+  opportunities_count: number;
+  status: string;
+}
+
+export async function getEmailLogs(limit: number = 50): Promise<EmailLogEntry[]> {
+  const sql = getDb();
+  const result = await sql`
+    SELECT
+      el.id,
+      el.user_id,
+      u.email as user_email,
+      el.sent_at,
+      el.opportunities_count,
+      el.status
+    FROM email_log el
+    JOIN users u ON el.user_id = u.id
+    ORDER BY el.sent_at DESC
+    LIMIT ${limit}
+  `;
+  return result as EmailLogEntry[];
+}
+
+// ============ ADMIN: Cron Monitoring ============
+
+export interface CronRun {
+  id: number;
+  started_at: Date;
+  completed_at: Date | null;
+  hour_utc: number;
+  users_triggered: number;
+  users_sent: number;
+  users_failed: number;
+  users_skipped: number;
+  status: 'running' | 'completed' | 'failed';
+  error: string | null;
+}
+
+export async function createCronRun(hourUtc: number): Promise<number> {
+  const sql = getDb();
+  const result = await sql`
+    INSERT INTO cron_runs (hour_utc, status)
+    VALUES (${hourUtc}, 'running')
+    RETURNING id
+  `;
+  return result[0].id;
+}
+
+export async function updateCronRun(
+  id: number,
+  data: {
+    usersTriggered?: number;
+    usersSent?: number;
+    usersFailed?: number;
+    usersSkipped?: number;
+    status?: 'running' | 'completed' | 'failed';
+    error?: string;
+  }
+): Promise<void> {
+  const sql = getDb();
+
+  if (data.status === 'completed' || data.status === 'failed') {
+    await sql`
+      UPDATE cron_runs
+      SET
+        users_triggered = COALESCE(${data.usersTriggered ?? null}, users_triggered),
+        users_sent = COALESCE(${data.usersSent ?? null}, users_sent),
+        users_failed = COALESCE(${data.usersFailed ?? null}, users_failed),
+        users_skipped = COALESCE(${data.usersSkipped ?? null}, users_skipped),
+        status = ${data.status},
+        error = ${data.error ?? null},
+        completed_at = NOW()
+      WHERE id = ${id}
+    `;
+  } else {
+    await sql`
+      UPDATE cron_runs
+      SET
+        users_triggered = COALESCE(${data.usersTriggered ?? null}, users_triggered),
+        users_sent = COALESCE(${data.usersSent ?? null}, users_sent),
+        users_failed = COALESCE(${data.usersFailed ?? null}, users_failed),
+        users_skipped = COALESCE(${data.usersSkipped ?? null}, users_skipped),
+        status = COALESCE(${data.status ?? null}, status),
+        error = COALESCE(${data.error ?? null}, error)
+      WHERE id = ${id}
+    `;
+  }
+}
+
+export async function getCronRuns(limit: number = 20): Promise<CronRun[]> {
+  const sql = getDb();
+  const result = await sql`
+    SELECT * FROM cron_runs
+    ORDER BY started_at DESC
+    LIMIT ${limit}
+  `;
+  return result as CronRun[];
+}
+
+export async function getAdminStats(): Promise<{
+  totalUsers: number;
+  proUsers: number;
+  freeUsers: number;
+  recentSignups: number;
+  activeUsers: number;
+  canceledUsers: number;
+  pastDueUsers: number;
+}> {
+  const sql = getDb();
+
+  const [totals] = await sql`
+    SELECT
+      COUNT(*)::int as total_users,
+      COUNT(*) FILTER (WHERE plan = 'pro')::int as pro_users,
+      COUNT(*) FILTER (WHERE plan = 'free')::int as free_users,
+      COUNT(*) FILTER (WHERE created_at > NOW() - INTERVAL '7 days')::int as recent_signups,
+      COUNT(*) FILTER (WHERE status = 'active')::int as active_users,
+      COUNT(*) FILTER (WHERE status = 'canceled')::int as canceled_users,
+      COUNT(*) FILTER (WHERE status = 'past_due')::int as past_due_users
+    FROM users
+  `;
+
+  return {
+    totalUsers: totals.total_users,
+    proUsers: totals.pro_users,
+    freeUsers: totals.free_users,
+    recentSignups: totals.recent_signups,
+    activeUsers: totals.active_users,
+    canceledUsers: totals.canceled_users,
+    pastDueUsers: totals.past_due_users,
+  };
 }

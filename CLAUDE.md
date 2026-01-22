@@ -1,27 +1,28 @@
 # XeroScroll
 
-Micro-SaaS that sends X/Twitter creators daily email digests of reply opportunities from accounts they monitor.
+Micro-SaaS that sends X/Twitter creators daily email "reply packs" - curated reply opportunities from accounts they monitor, with AI-written draft replies in their voice.
+
+**Live:** https://xeroscroll.com
 
 ## Business Model
 
-- $29/mo subscription via Stripe
-- Users submit up to 10 accounts to monitor
-- Daily email digest with top reply opportunities + **AI-written draft replies**
+- **Free:** 1 monitored account
+- **Pro:** $29/mo, up to 10 monitored accounts
+- Daily email with top reply opportunities + AI-written draft replies
 
 ## Tech Stack
 
 - **Framework:** Next.js 14 (App Router)
 - **Database:** Neon Postgres (via Vercel Storage)
+- **Auth:** Google OAuth + Magic Links (passwordless)
 - **Payments:** Stripe (subscriptions)
-- **Email:** Resend
+- **Email:** Resend (primary) + ZeptoMail (fallback)
 - **Twitter Data:** TwitterAPI.io (~$0.15/1000 tweets)
 - **AI Replies:** Claude API (Anthropic)
 - **Hosting:** Vercel
-- **Cron:** Vercel Cron (6am HST daily)
+- **Cron:** Vercel Cron (user-configurable delivery time)
 
 ## Environment Variables
-
-Copy `config/.env.example` to `config/.env` and fill in:
 
 ```
 # Database (Neon via Vercel)
@@ -29,19 +30,30 @@ POSTGRES_URL=
 POSTGRES_PRISMA_URL=
 POSTGRES_URL_NON_POOLING=
 
+# Auth
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
 # Stripe
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
-STRIPE_PRICE_ID=           # Your $29/mo price ID
+STRIPE_PRICE_ID=           # $29/mo price ID
 
 # TwitterAPI.io
 TWITTER_API_KEY=
 
-# Anthropic (Claude API for AI replies)
+# Anthropic (Claude API)
 ANTHROPIC_API_KEY=
 
-# Resend
+# Email
 RESEND_API_KEY=
+ZEPTOMAIL_API_KEY=         # Fallback email provider
+
+# Cron
+CRON_SECRET=               # Required for Vercel cron auth
+
+# Admin
+ADMIN_EMAILS=              # Comma-separated admin emails
 
 # App
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -54,9 +66,12 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   email VARCHAR(255) UNIQUE NOT NULL,
+  google_id VARCHAR(255) UNIQUE,
   stripe_customer_id VARCHAR(255),
   stripe_subscription_id VARCHAR(255),
-  status VARCHAR(50) DEFAULT 'active',  -- active, canceled, past_due
+  plan VARCHAR(50) DEFAULT 'free',        -- free, pro
+  status VARCHAR(50) DEFAULT 'active',    -- active, canceled, past_due
+  delivery_hour_utc INTEGER DEFAULT 16,   -- User's preferred delivery time in UTC
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -72,15 +87,6 @@ CREATE TABLE monitored_accounts (
   UNIQUE(user_id, handle)
 );
 
--- Email log (for debugging)
-CREATE TABLE email_log (
-  id SERIAL PRIMARY KEY,
-  user_id INTEGER REFERENCES users(id),
-  sent_at TIMESTAMP DEFAULT NOW(),
-  opportunities_count INTEGER,
-  status VARCHAR(50)
-);
-
 -- User profiles (for AI reply generation)
 CREATE TABLE user_profiles (
   id SERIAL PRIMARY KEY,
@@ -90,8 +96,39 @@ CREATE TABLE user_profiles (
   expertise TEXT,
   tone VARCHAR(100),
   example_replies TEXT,
+  skip_political BOOLEAN DEFAULT false,
   created_at TIMESTAMP DEFAULT NOW(),
   updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Email log
+CREATE TABLE email_log (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id),
+  sent_at TIMESTAMP DEFAULT NOW(),
+  opportunities_count INTEGER,
+  status VARCHAR(50)
+);
+
+-- Cron runs (tracks each cron execution)
+CREATE TABLE cron_runs (
+  id SERIAL PRIMARY KEY,
+  started_at TIMESTAMP DEFAULT NOW(),
+  completed_at TIMESTAMP,
+  status VARCHAR(50) DEFAULT 'running',   -- running, success, failed
+  users_processed INTEGER DEFAULT 0,
+  emails_sent INTEGER DEFAULT 0,
+  errors TEXT,
+  duration_ms INTEGER
+);
+
+-- Sessions
+CREATE TABLE sessions (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+  token VARCHAR(255) UNIQUE NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW()
 );
 ```
 
@@ -106,56 +143,87 @@ npm run dev
 # Build
 npm run build
 
-# Test cron locally
-curl http://localhost:3000/api/cron
+# Test cron locally (requires CRON_SECRET in .env.local)
+curl -H "Authorization: Bearer $CRON_SECRET" http://localhost:3000/api/cron
 
 # Test with specific user
-curl "http://localhost:3000/api/cron?email=test@example.com"
+curl -H "Authorization: Bearer $CRON_SECRET" "http://localhost:3000/api/cron?email=test@example.com"
 ```
 
 ## User Flow
 
 1. User lands on homepage
-2. Clicks "Subscribe" -> Stripe Checkout ($29/mo)
-3. Stripe webhook creates user in DB
-4. User redirected to /success with onboarding form
-5. User fills out profile (name, bio, expertise, tone, example replies)
-6. User submits up to 10 accounts to monitor
-7. Daily cron runs at 6am HST:
-   - Fetch tweets from each user's monitored accounts
+2. Signs up via Google OAuth or Magic Link (free plan)
+3. OR clicks "Subscribe" -> Stripe Checkout ($29/mo for Pro)
+4. Redirected to /dashboard
+5. Fills out profile (name, bio, expertise, tone, example replies)
+6. Adds accounts to monitor (1 for free, up to 10 for pro)
+7. Sets preferred delivery time
+8. Daily cron runs at their chosen time:
+   - Fetch tweets from monitored accounts
    - Score and rank top 10 reply opportunities
    - Generate AI draft replies using user's profile/voice
-   - Send email digest via Resend
+   - Send email via Resend (fallback to ZeptoMail)
 
-## API Routes
+## Key Files
 
+### Core
+- `lib/db.ts` - Database connection and queries
+- `lib/auth.ts` - Session management, requireAuth(), isAdmin()
+- `lib/email.ts` - Resend + ZeptoMail fallback
+- `lib/twitter.ts` - TwitterAPI.io client
+- `lib/claude.ts` - AI reply generation prompt
+- `lib/reply-finder.ts` - Tweet filtering, scoring, opportunity ranking
+- `lib/stripe.ts` - Stripe client
+
+### Pages
+- `src/app/page.tsx` - Landing page
+- `src/app/signup/page.tsx` - Free signup
+- `src/app/dashboard/page.tsx` - User dashboard (accounts, profile, delivery time, run now)
+- `src/app/admin/page.tsx` - Admin dashboard (users, emails, cron history)
+- `src/app/success/page.tsx` - Post-checkout redirect
+
+### API Routes
 | Route | Method | Purpose |
 |-------|--------|---------|
-| `/api/webhook` | POST | Stripe webhook (subscription events) |
-| `/api/onboard` | POST | Save user's profile and monitored accounts |
-| `/api/cron` | GET | Trigger daily digest (called by Vercel Cron) |
+| `/api/auth/google` | GET | Initiate Google OAuth |
+| `/api/auth/google/callback` | GET | Google OAuth callback |
+| `/api/auth/send-link` | POST | Send magic link email |
+| `/api/auth/verify` | GET | Verify magic link token |
+| `/api/auth/logout` | POST | Clear session |
+| `/api/auth/session` | GET | Get current session |
+| `/api/webhook` | POST | Stripe webhook |
+| `/api/checkout` | POST | Create Stripe checkout session |
+| `/api/cron` | GET | Daily digest (Vercel Cron) |
+| `/api/dashboard/user` | GET | Get user data for dashboard |
+| `/api/admin/update-*` | POST | Update user settings |
+| `/api/admin-dashboard/*` | GET | Admin data endpoints |
 | `/api/db/init` | GET | Initialize database tables |
+
+## Gotchas
+
+- **CRON_SECRET required:** Must be set in Vercel env vars or cron fails with 401
+- **Session cookies:** Set on Response object directly, not via `cookies().set()`
+- **Stripe billing portal:** Must be enabled in Stripe Dashboard -> Settings -> Billing -> Customer portal
+- **Google OAuth:** Redirect URI must match exactly in Google Cloud Console
+- **ZeptoMail:** Uses `Authorization: {apiKey}` header (not Bearer token)
+
+## Admin Access
+
+Add email to `ADMIN_EMAILS` env var. Admin dashboard at `/admin` shows:
+- User stats (total, pro, MRR)
+- User management (view, upgrade, delete)
+- Email logs
+- Cron run history
 
 ## Costs (at 50 users)
 
-- TwitterAPI.io: 50 users × 10 accounts × 10 tweets = 5,000/day = ~$23/mo
+- TwitterAPI.io: 50 users x 10 accounts x 10 tweets = 5,000/day = ~$23/mo
 - Resend: Free tier (3,000 emails/mo)
+- ZeptoMail: Free tier (10,000 emails/mo)
 - Vercel: Free tier
 - Neon: Free tier
+- Claude API: ~$5/mo
 
-Revenue: 50 × $29 = $1,450/mo
-Margin: ~98%
-
-## Files
-
-- `src/app/page.tsx` - Landing page
-- `src/app/success/page.tsx` - Post-checkout onboarding + profile form
-- `src/app/api/webhook/route.ts` - Stripe webhook handler
-- `src/app/api/onboard/route.ts` - Save profile and monitored accounts
-- `src/app/api/cron/route.ts` - Daily digest sender
-- `lib/db.ts` - Database connection and queries
-- `lib/stripe.ts` - Stripe client
-- `lib/twitter.ts` - TwitterAPI.io client
-- `lib/email.ts` - Resend email client
-- `lib/claude.ts` - Anthropic Claude API for AI replies
-- `lib/reply-finder.ts` - Core opportunity scoring + reply generation
+Revenue: 50 x $29 = $1,450/mo
+Margin: ~97%

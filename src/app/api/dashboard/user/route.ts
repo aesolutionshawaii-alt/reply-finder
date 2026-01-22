@@ -22,7 +22,12 @@ export async function GET(request: NextRequest) {
       status: user.status,
       plan: user.plan || 'pro',
       deliveryHourUtc: user.delivery_hour_utc ?? 16,
-      accounts: accounts.map(a => a.handle),
+      accounts: accounts.map(a => ({
+        handle: a.handle,
+        name: a.name,
+        isVerified: a.is_verified || false,
+        profilePicture: a.profile_picture,
+      })),
       profile: profile ? {
         displayName: profile.display_name,
         bio: profile.bio,

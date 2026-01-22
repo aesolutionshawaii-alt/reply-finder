@@ -115,7 +115,34 @@ export async function GET() {
       )
     `;
 
+    // Cron runs table for monitoring
+    await sql`
+      CREATE TABLE IF NOT EXISTS cron_runs (
+        id SERIAL PRIMARY KEY,
+        started_at TIMESTAMP DEFAULT NOW(),
+        completed_at TIMESTAMP,
+        hour_utc INTEGER,
+        users_triggered INTEGER DEFAULT 0,
+        users_sent INTEGER DEFAULT 0,
+        users_failed INTEGER DEFAULT 0,
+        users_skipped INTEGER DEFAULT 0,
+        status VARCHAR(50) DEFAULT 'running',
+        error TEXT
+      )
+    `;
+
+    // Add verification status and profile picture to monitored accounts
+    await sql`
+      ALTER TABLE monitored_accounts
+      ADD COLUMN IF NOT EXISTS is_verified BOOLEAN DEFAULT false
+    `;
+    await sql`
+      ALTER TABLE monitored_accounts
+      ADD COLUMN IF NOT EXISTS profile_picture TEXT
+    `;
+
     // Create indexes
+    await sql`CREATE INDEX IF NOT EXISTS idx_cron_runs_started ON cron_runs(started_at DESC)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_users_stripe_customer ON users(stripe_customer_id)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_monitored_accounts_user ON monitored_accounts(user_id)`;

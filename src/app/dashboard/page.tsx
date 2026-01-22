@@ -3,9 +3,16 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'motion/react';
-import { Zap, Users, User, Send, CreditCard, ExternalLink, ChevronRight, Clock, Mail, ArrowRight } from 'lucide-react';
+import { Zap, Users, User, Send, CreditCard, ExternalLink, ChevronRight, Clock, Mail, ArrowRight, Plus, X, Crown, BadgeCheck, Download, Loader2, Check, RefreshCw } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
+
+interface AccountData {
+  handle: string;
+  name: string | null;
+  isVerified: boolean;
+  profilePicture: string | null;
+}
 
 interface UserData {
   email: string;
@@ -19,7 +26,7 @@ interface UserData {
     exampleReplies: string;
     skipPolitical: boolean;
   } | null;
-  accounts: string[];
+  accounts: AccountData[];
 }
 
 // Common timezones with UTC offsets
@@ -91,6 +98,31 @@ function formatTimeWithTimezone(hour: number, timezoneOffset: number): string {
   return `${displayHour}:00 ${period} ${tz}`;
 }
 
+// Calculate next delivery date
+function getNextDelivery(deliveryHourUtc: number, timezoneOffset: number): string {
+  const now = new Date();
+  const localHour = utcToHour(deliveryHourUtc, timezoneOffset);
+
+  // Get current time in user's timezone
+  const userNow = new Date(now.getTime() + (timezoneOffset * 60 * 60 * 1000) + (now.getTimezoneOffset() * 60 * 1000));
+  const currentHour = userNow.getHours();
+
+  // If we haven't passed today's delivery time, it's today. Otherwise tomorrow.
+  const isToday = currentHour < localHour;
+
+  const deliveryDate = new Date(userNow);
+  if (!isToday) {
+    deliveryDate.setDate(deliveryDate.getDate() + 1);
+  }
+
+  const dayName = isToday ? 'Today' : 'Tomorrow';
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const month = monthNames[deliveryDate.getMonth()];
+  const day = deliveryDate.getDate();
+
+  return `${dayName}, ${month} ${day}`;
+}
+
 // Sidebar Navigation
 function Sidebar({
   email,
@@ -99,7 +131,9 @@ function Sidebar({
   onSectionChange,
   onLogout,
   onManageSubscription,
-  subscriptionLoading
+  subscriptionLoading,
+  onRunNow,
+  sendingDigest
 }: {
   email: string;
   plan: 'free' | 'pro';
@@ -108,12 +142,13 @@ function Sidebar({
   onLogout: () => void;
   onManageSubscription: () => void;
   subscriptionLoading: boolean;
+  onRunNow: () => void;
+  sendingDigest: boolean;
 }) {
   const navItems = [
     { id: 'accounts', label: 'Monitored Accounts', icon: Users },
     { id: 'profile', label: 'Your Profile', icon: User },
     { id: 'schedule', label: 'Delivery Time', icon: Clock },
-    { id: 'test', label: 'Test Digest', icon: Send },
   ];
 
   return (
@@ -166,6 +201,22 @@ function Sidebar({
             </li>
           ))}
         </ul>
+
+        {/* Run Now Action */}
+        <div className="mt-6">
+          <div className="text-xs text-gray-500 uppercase tracking-wider px-3 mb-2">Actions</div>
+          <button
+            onClick={onRunNow}
+            disabled={sendingDigest}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm bg-green-600 hover:bg-green-700 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Zap className={`w-4 h-4 ${sendingDigest ? 'animate-pulse' : ''}`} />
+            {sendingDigest ? 'Working...' : 'Run Now'}
+          </button>
+          {sendingDigest && (
+            <p className="text-xs text-gray-500 px-3 mt-2">~30-60 seconds</p>
+          )}
+        </div>
 
         {plan === 'pro' && (
           <>
@@ -226,7 +277,10 @@ function DashboardContent() {
   const [magicLinkSent, setMagicLinkSent] = useState(false);
 
   // Form states
-  const [accounts, setAccounts] = useState('');
+  const [accounts, setAccounts] = useState<{ handle: string; isVerified: boolean }[]>([]);
+  const [accountInput, setAccountInput] = useState('');
+  const [accountError, setAccountError] = useState('');
+  const [hasUnsavedAccounts, setHasUnsavedAccounts] = useState(false);
   const [displayName, setDisplayName] = useState('');
   const [bio, setBio] = useState('');
   const [expertise, setExpertise] = useState('');
@@ -237,15 +291,23 @@ function DashboardContent() {
   const [selectedTimezone, setSelectedTimezone] = useState(() => getClosestTimezone(getBrowserTimezoneOffset()));
   const [deliveryHourUtc, setDeliveryHourUtc] = useState(16);
 
+  // Import from X account states
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importHandle, setImportHandle] = useState('');
+  const [importLoading, setImportLoading] = useState(false);
+  const [importError, setImportError] = useState('');
+  const [importAccounts, setImportAccounts] = useState<{ handle: string; name: string; isVerified: boolean; followers: number; selected: boolean; alreadyAdded: boolean }[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+
   const timeOptions = generateTimeOptions();
 
-  // Auto-dismiss success messages after 5 seconds
+  // Auto-dismiss success messages after 5 seconds (but not while sending digest)
   useEffect(() => {
-    if (success) {
+    if (success && !sendingDigest) {
       const timer = setTimeout(() => setSuccess(''), 5000);
       return () => clearTimeout(timer);
     }
-  }, [success]);
+  }, [success, sendingDigest]);
 
   // Check for URL error params and check session on load
   useEffect(() => {
@@ -267,7 +329,14 @@ function DashboardContent() {
       if (data.authenticated) {
         setUserData(data);
         setEmail(data.email);
-        setAccounts(data.accounts.join('\n'));
+        // Handle both old format (string[]) and new format (object[])
+        const mappedAccounts = data.accounts.map((a: string | AccountData) => {
+          if (typeof a === 'string') {
+            return { handle: a.startsWith('@') ? a : `@${a}`, isVerified: false };
+          }
+          return { handle: a.handle.startsWith('@') ? a.handle : `@${a.handle}`, isVerified: a.isVerified || false };
+        });
+        setAccounts(mappedAccounts);
 
         const userUtcHour = data.deliveryHourUtc ?? 16;
         setDeliveryHourUtc(userUtcHour);
@@ -356,16 +425,61 @@ function DashboardContent() {
     }
   };
 
+  const maxAccounts = userData?.plan === 'free' ? 1 : 10;
+  const isLimitReached = accounts.length >= maxAccounts;
+
+  const handleAddAccount = () => {
+    const trimmedValue = accountInput.trim();
+
+    if (!trimmedValue) {
+      setAccountError('Please enter a handle');
+      return;
+    }
+
+    const handle = trimmedValue.startsWith('@') ? trimmedValue : `@${trimmedValue}`;
+    const handleWithoutAt = handle.slice(1);
+
+    if (!/^[a-zA-Z0-9_]{1,15}$/.test(handleWithoutAt)) {
+      setAccountError('Invalid handle format');
+      return;
+    }
+
+    if (accounts.some(a => a.handle.toLowerCase() === handle.toLowerCase())) {
+      setAccountError('Already added');
+      return;
+    }
+
+    if (accounts.length >= maxAccounts) {
+      setAccountError(userData?.plan === 'free' ? 'Upgrade to Pro for more' : 'Limit reached');
+      return;
+    }
+
+    // New accounts are added with isVerified: false until saved
+    setAccounts([...accounts, { handle, isVerified: false }]);
+    setAccountInput('');
+    setAccountError('');
+    setHasUnsavedAccounts(true);
+  };
+
+  const handleRemoveAccount = (handle: string) => {
+    setAccounts(accounts.filter(a => a.handle !== handle));
+    setAccountError('');
+    setHasUnsavedAccounts(true);
+  };
+
+  const handleAccountKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddAccount();
+    }
+  };
+
   const handleSaveAccounts = async () => {
     setLoading(true);
     setError('');
     setSuccess('');
 
-    const accountList = accounts
-      .split(/[\n,]/)
-      .map(a => a.trim().replace(/^@/, ''))
-      .filter(a => a.length > 0)
-      .slice(0, userData?.plan === 'free' ? 1 : 10);
+    const accountList = accounts.map(a => a.handle.replace(/^@/, ''));
 
     try {
       const response = await fetch('/api/admin/update-accounts', {
@@ -374,14 +488,24 @@ function DashboardContent() {
         body: JSON.stringify({ accounts: accountList }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const data = await response.json();
         throw new Error(data.error || 'Failed to save');
       }
 
+      // Update accounts with verification status from response
+      if (data.accounts) {
+        const updatedAccounts = data.accounts.map((a: { handle: string; isVerified?: boolean }) => ({
+          handle: a.handle.startsWith('@') ? a.handle : `@${a.handle}`,
+          isVerified: a.isVerified || false,
+        }));
+        setAccounts(updatedAccounts);
+      }
+
+      setHasUnsavedAccounts(false);
       const timeDisplay = formatTimeWithTimezone(utcToHour(deliveryHourUtc, selectedTimezone), selectedTimezone);
-      setSuccess(`You're all set! Your first digest will arrive tomorrow at ${timeDisplay}. You can also send a test digest now from the "Test Digest" tab.`);
-      setAccounts(accountList.join('\n'));
+      setSuccess(`Saved! Your reply pack will arrive at ${timeDisplay}.`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save accounts');
     } finally {
@@ -453,7 +577,7 @@ function DashboardContent() {
   const handleTestDigest = async () => {
     setSendingDigest(true);
     setError('');
-    setSuccess('');
+    setSuccess('Generating your reply pack... this takes 30-60 seconds.');
 
     try {
       const response = await fetch(`/api/cron?email=${encodeURIComponent(email)}`);
@@ -463,11 +587,122 @@ function DashboardContent() {
         throw new Error(data.error || 'Failed to send');
       }
 
-      setSuccess('Test digest sent! Check your email.');
+      if (data.error === 'No opportunities found') {
+        setSuccess('No reply opportunities found right now. Try again later or add more accounts.');
+      } else {
+        setSuccess(`Done! ${data.opportunities || ''} opportunities sent to your inbox.`);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send test digest');
     } finally {
       setSendingDigest(false);
+    }
+  };
+
+  const handleFetchFollowing = async () => {
+    if (!importHandle.trim()) {
+      setImportError('Enter your X handle');
+      return;
+    }
+
+    setImportLoading(true);
+    setImportError('');
+    setImportAccounts([]);
+
+    try {
+      const cleanHandle = importHandle.replace(/^@/, '').trim();
+      const response = await fetch(`/api/twitter/following?handle=${encodeURIComponent(cleanHandle)}`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch following');
+      }
+
+      if (!data.accounts || data.accounts.length === 0) {
+        setImportError('No accounts found. Make sure the handle is correct and the account is public.');
+        return;
+      }
+
+      // Mark accounts that are already added
+      const existingHandles = accounts.map(a => a.handle.toLowerCase().replace(/^@/, ''));
+      const accountsWithSelection = data.accounts.map((a: { handle: string; name: string; isVerified: boolean; followers: number }) => ({
+        handle: a.handle,
+        name: a.name,
+        isVerified: a.isVerified,
+        followers: a.followers,
+        selected: false,
+        alreadyAdded: existingHandles.includes(a.handle.toLowerCase()),
+      }));
+
+      setImportAccounts(accountsWithSelection);
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'Failed to fetch following');
+    } finally {
+      setImportLoading(false);
+    }
+  };
+
+  const handleToggleImportAccount = (handle: string) => {
+    setImportAccounts(prev => prev.map(a =>
+      a.handle === handle ? { ...a, selected: !a.selected } : a
+    ));
+  };
+
+  const handleImportSelected = () => {
+    const selectedToAdd = importAccounts
+      .filter(a => a.selected && !a.alreadyAdded)
+      .slice(0, maxAccounts - accounts.length);
+
+    if (selectedToAdd.length === 0) {
+      setImportError('Select at least one account to import');
+      return;
+    }
+
+    const newAccounts = selectedToAdd.map(a => ({
+      handle: `@${a.handle}`,
+      isVerified: a.isVerified,
+    }));
+
+    setAccounts([...accounts, ...newAccounts]);
+    setHasUnsavedAccounts(true);
+    setShowImportModal(false);
+    setImportHandle('');
+    setImportAccounts([]);
+  };
+
+  const handleRefreshAccounts = async () => {
+    if (accounts.length === 0) return;
+
+    setRefreshing(true);
+    setError('');
+
+    try {
+      const accountList = accounts.map(a => a.handle.replace(/^@/, ''));
+      const response = await fetch('/api/admin/update-accounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accounts: accountList }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to refresh');
+      }
+
+      if (data.accounts) {
+        const updatedAccounts = data.accounts.map((a: { handle: string; isVerified?: boolean }) => ({
+          handle: a.handle.startsWith('@') ? a.handle : `@${a.handle}`,
+          isVerified: a.isVerified || false,
+        }));
+        setAccounts(updatedAccounts);
+      }
+
+      setSuccess('Accounts refreshed');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to refresh');
+    } finally {
+      setRefreshing(false);
     }
   };
 
@@ -640,6 +875,8 @@ function DashboardContent() {
         onLogout={handleLogout}
         onManageSubscription={handleManageSubscription}
         subscriptionLoading={subscriptionLoading}
+        onRunNow={handleTestDigest}
+        sendingDigest={sendingDigest}
       />
 
       {/* Main Content */}
@@ -653,7 +890,6 @@ function DashboardContent() {
               {activeSection === 'accounts' && 'Monitored Accounts'}
               {activeSection === 'profile' && 'Your Profile'}
               {activeSection === 'schedule' && 'Delivery Time'}
-              {activeSection === 'test' && 'Test Digest'}
             </span>
           </div>
         </div>
@@ -679,45 +915,321 @@ function DashboardContent() {
                 description="Add X accounts you want to monitor for reply opportunities."
               />
 
-              <Card className="bg-gradient-to-br from-white/[0.08] to-white/[0.03] border-white/10 p-8">
-                <div className="flex items-start gap-4 mb-6">
-                  <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-                    <Users className="w-5 h-5 text-blue-400" />
+              {/* Daily Reply Pack Status */}
+              <Card className="bg-gradient-to-br from-yellow-500/10 to-orange-500/5 border-yellow-500/20 p-5 mb-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-lg bg-yellow-500/20 flex items-center justify-center flex-shrink-0">
+                    <Zap className="w-5 h-5 text-yellow-400" />
                   </div>
-                  <div>
-                    <h3 className="font-medium mb-1">X Accounts to Monitor</h3>
-                    <p className="text-sm text-gray-400">
-                      We&apos;ll find the best reply opportunities from these accounts.
+                  <div className="flex-1">
+                    <h3 className="font-medium mb-3">Daily Reply Pack</h3>
+                    <div className="text-sm text-gray-300 space-y-1 mb-3">
+                      <p><span className="text-gray-500">Delivery:</span> Every day at {formatTimeWithTimezone(utcToHour(deliveryHourUtc, selectedTimezone), selectedTimezone)}</p>
+                      <p><span className="text-gray-500">Next:</span> {getNextDelivery(deliveryHourUtc, selectedTimezone)}</p>
+                    </div>
+                    <p className="text-sm text-gray-400 mb-3">
+                      Your reply pack lands in your inbox every morning. Automatic.
                     </p>
+                    <button
+                      onClick={handleTestDigest}
+                      disabled={sendingDigest}
+                      className="text-sm text-yellow-400 hover:text-yellow-300 transition-colors disabled:opacity-50"
+                    >
+                      {sendingDigest ? 'Sending...' : "Can't wait? → Run Now"}
+                    </button>
                   </div>
-                </div>
-
-                <textarea
-                  value={accounts}
-                  onChange={(e) => setAccounts(e.target.value)}
-                  placeholder={userData?.plan === 'free' ? 'elonmusk' : 'elonmusk\nsamaltman\nlevelsio\nbalajis\nnaval'}
-                  rows={userData?.plan === 'free' ? 3 : 8}
-                  className="w-full px-4 py-3 bg-black/40 border border-white/10 rounded-lg text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 font-mono text-sm mb-4 transition-all"
-                />
-
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-gray-500">
-                    One handle per line (max {userData?.plan === 'free' ? '1' : '10'})
-                    {userData?.plan === 'free' && (
-                      <span className="ml-2">
-                        · <a href="/#pricing" className="text-blue-400 hover:text-blue-300 transition-colors">Upgrade to Pro</a>
-                      </span>
-                    )}
-                  </p>
-                  <Button
-                    onClick={handleSaveAccounts}
-                    disabled={loading}
-                    className="bg-white text-black hover:bg-gray-200"
-                  >
-                    {loading ? 'Saving...' : 'Save Accounts'}
-                  </Button>
                 </div>
               </Card>
+
+              <Card className="bg-gradient-to-br from-white/[0.08] to-white/[0.03] border-white/10 p-8">
+                {/* Header */}
+                <div className="flex items-start justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-md bg-white/5 border border-white/10">
+                      <X className="w-5 h-5 text-blue-500" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-medium">Monitored Accounts</h3>
+                      <p className="text-sm text-gray-400 mt-0.5">
+                        We&apos;ll find reply opportunities from these accounts
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right flex items-center gap-3">
+                    {accounts.length > 0 && (
+                      <button
+                        onClick={handleRefreshAccounts}
+                        disabled={refreshing}
+                        className="p-2 hover:bg-white/10 rounded-lg transition-colors disabled:opacity-50"
+                        title="Refresh verification status"
+                      >
+                        <RefreshCw className={`w-4 h-4 text-gray-400 ${refreshing ? 'animate-spin' : ''}`} />
+                      </button>
+                    )}
+                    <div>
+                      <div className="text-sm text-gray-400">
+                        {accounts.length} of {maxAccounts} {maxAccounts === 1 ? 'account' : 'accounts'}
+                      </div>
+                      {userData?.plan === 'free' && (
+                        <a
+                          href="/#pricing"
+                          className="text-xs text-blue-500 hover:text-blue-400 transition-colors flex items-center gap-1 justify-end mt-1"
+                        >
+                          <Crown className="w-3 h-3" />
+                          Upgrade for 10 accounts
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="mb-6">
+                  <div className="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-300 ${
+                        isLimitReached ? 'bg-blue-500' : 'bg-blue-500/80'
+                      }`}
+                      style={{ width: `${(accounts.length / maxAccounts) * 100}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Account Tags */}
+                {accounts.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {accounts.map((account) => (
+                      <div
+                        key={account.handle}
+                        className="inline-flex items-center gap-2 px-3 py-2 bg-white/5 border border-white/10 rounded-md group hover:bg-white/10 transition-colors"
+                      >
+                        <span className="text-sm">{account.handle}</span>
+                        {account.isVerified && (
+                          <BadgeCheck className="w-4 h-4 text-blue-500" />
+                        )}
+                        <button
+                          onClick={() => handleRemoveAccount(account.handle)}
+                          className="p-0.5 rounded hover:bg-white/10 transition-colors"
+                          aria-label={`Remove ${account.handle}`}
+                        >
+                          <X className="w-3.5 h-3.5 text-gray-400 group-hover:text-white transition-colors" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add Account Input */}
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={accountInput}
+                      onChange={(e) => {
+                        setAccountInput(e.target.value);
+                        setAccountError('');
+                      }}
+                      onKeyPress={handleAccountKeyPress}
+                      placeholder="Enter handle (e.g. elonmusk)"
+                      disabled={isLimitReached}
+                      className="flex-1 px-4 py-2.5 bg-white/5 border border-white/10 rounded-md text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    />
+                    <button
+                      onClick={handleAddAccount}
+                      disabled={isLimitReached}
+                      className="px-4 py-2.5 bg-blue-500 hover:bg-blue-600 disabled:bg-white/5 disabled:text-gray-500 disabled:cursor-not-allowed rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add
+                    </button>
+                    <button
+                      onClick={() => setShowImportModal(true)}
+                      disabled={isLimitReached}
+                      className="px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 disabled:opacity-50 disabled:cursor-not-allowed rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      Import
+                    </button>
+                  </div>
+
+                  {/* Error Message */}
+                  {accountError && (
+                    <div className="text-sm text-red-400 flex items-center gap-2">
+                      <div className="w-1 h-1 rounded-full bg-red-400" />
+                      {accountError}
+                    </div>
+                  )}
+
+                  {/* Limit Reached Message */}
+                  {isLimitReached && !accountError && userData?.plan === 'free' && (
+                    <div className="flex items-center gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-md">
+                      <Crown className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                      <p className="text-sm text-gray-300">
+                        You&apos;ve hit your limit.{' '}
+                        <a href="/#pricing" className="text-blue-500 hover:text-blue-400 font-medium transition-colors">
+                          Upgrade to Pro
+                        </a>{' '}
+                        for up to 10 accounts.
+                      </p>
+                    </div>
+                  )}
+
+                  {isLimitReached && !accountError && userData?.plan === 'pro' && (
+                    <div className="text-sm text-gray-400 flex items-center gap-2">
+                      <div className="w-1 h-1 rounded-full bg-gray-400" />
+                      Maximum {maxAccounts} accounts reached
+                    </div>
+                  )}
+                </div>
+
+                {/* Save Button */}
+                {hasUnsavedAccounts && (
+                  <div className="mt-6 pt-6 border-t border-white/10">
+                    <Button
+                      onClick={handleSaveAccounts}
+                      disabled={loading}
+                      className="bg-white text-black hover:bg-gray-200"
+                    >
+                      {loading ? 'Saving...' : 'Save Changes'}
+                    </Button>
+                  </div>
+                )}
+              </Card>
+
+              {/* Import Modal */}
+              {showImportModal && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                  <div className="bg-zinc-900 border border-white/10 rounded-xl max-w-lg w-full max-h-[80vh] overflow-hidden">
+                    {/* Modal Header */}
+                    <div className="flex items-center justify-between p-4 border-b border-white/10">
+                      <div>
+                        <h3 className="text-lg font-medium">Import from X</h3>
+                        <p className="text-sm text-gray-400">Add accounts you follow</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setShowImportModal(false);
+                          setImportHandle('');
+                          setImportAccounts([]);
+                          setImportError('');
+                        }}
+                        className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
+                    </div>
+
+                    {/* Modal Body */}
+                    <div className="p-4">
+                      {importAccounts.length === 0 ? (
+                        <>
+                          <p className="text-sm text-gray-400 mb-4">
+                            Enter your X handle to see who you follow
+                          </p>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              value={importHandle}
+                              onChange={(e) => {
+                                setImportHandle(e.target.value);
+                                setImportError('');
+                              }}
+                              onKeyPress={(e) => e.key === 'Enter' && handleFetchFollowing()}
+                              placeholder="Your X handle"
+                              className="flex-1 px-4 py-2.5 bg-white/5 border border-white/10 rounded-md text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                            />
+                            <button
+                              onClick={handleFetchFollowing}
+                              disabled={importLoading}
+                              className="px-4 py-2.5 bg-blue-500 hover:bg-blue-600 disabled:opacity-50 rounded-md text-sm font-medium transition-colors flex items-center gap-2"
+                            >
+                              {importLoading ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                'Fetch'
+                              )}
+                            </button>
+                          </div>
+                          {importError && (
+                            <p className="text-sm text-red-400 mt-3">{importError}</p>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="text-sm text-gray-400">
+                              Select accounts to import ({importAccounts.filter(a => a.selected).length} selected)
+                            </p>
+                            <button
+                              onClick={() => setImportAccounts([])}
+                              className="text-sm text-blue-500 hover:text-blue-400"
+                            >
+                              Search again
+                            </button>
+                          </div>
+                          <div className="max-h-[40vh] overflow-y-auto space-y-1">
+                            {importAccounts.map((account) => {
+                              const wouldExceedLimit = !account.selected &&
+                                accounts.length + importAccounts.filter(a => a.selected).length >= maxAccounts;
+
+                              return (
+                                <button
+                                  key={account.handle}
+                                  onClick={() => !account.alreadyAdded && !wouldExceedLimit && handleToggleImportAccount(account.handle)}
+                                  disabled={account.alreadyAdded || (wouldExceedLimit && !account.selected)}
+                                  className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-left ${
+                                    account.alreadyAdded
+                                      ? 'bg-white/5 opacity-50 cursor-not-allowed'
+                                      : account.selected
+                                      ? 'bg-blue-500/20 border border-blue-500/30'
+                                      : 'bg-white/5 hover:bg-white/10'
+                                  } ${wouldExceedLimit && !account.selected ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
+                                  <div className={`w-5 h-5 rounded border flex items-center justify-center flex-shrink-0 ${
+                                    account.selected ? 'bg-blue-500 border-blue-500' : 'border-white/20'
+                                  }`}>
+                                    {account.selected && <Check className="w-3 h-3" />}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-medium truncate">@{account.handle}</span>
+                                      {account.isVerified && (
+                                        <BadgeCheck className="w-4 h-4 text-blue-500 flex-shrink-0" />
+                                      )}
+                                    </div>
+                                    {account.name && (
+                                      <p className="text-sm text-gray-400 truncate">{account.name}</p>
+                                    )}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {account.alreadyAdded ? 'Added' : `${(account.followers / 1000).toFixed(0)}K`}
+                                  </div>
+                                </button>
+                              );
+                            })}
+                          </div>
+                          {importError && (
+                            <p className="text-sm text-red-400 mt-3">{importError}</p>
+                          )}
+                        </>
+                      )}
+                    </div>
+
+                    {/* Modal Footer */}
+                    {importAccounts.length > 0 && (
+                      <div className="p-4 border-t border-white/10">
+                        <Button
+                          onClick={handleImportSelected}
+                          disabled={importAccounts.filter(a => a.selected).length === 0}
+                          className="w-full bg-white text-black hover:bg-gray-200 disabled:opacity-50"
+                        >
+                          Add {importAccounts.filter(a => a.selected).length} Account{importAccounts.filter(a => a.selected).length !== 1 ? 's' : ''}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -873,56 +1385,6 @@ function DashboardContent() {
             </div>
           )}
 
-          {/* Test Digest Section */}
-          {activeSection === 'test' && (
-            <div>
-              <SectionHeader
-                title="Test Digest"
-                description="Send yourself a test email to see what your daily digest looks like."
-              />
-
-              <Card className="bg-white/5 border-white/10 p-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-                    <Send className="w-5 h-5 text-blue-400" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-medium mb-1">Send Test Email</h3>
-                    <p className="text-sm text-gray-400 mb-4">
-                      This will fetch recent tweets from your monitored accounts and send you a digest with AI-generated reply suggestions. Takes about 30 seconds.
-                    </p>
-                    <Button
-                      onClick={handleTestDigest}
-                      disabled={sendingDigest}
-                      className="bg-blue-600 text-white hover:bg-blue-700"
-                    >
-                      {sendingDigest ? 'Sending... (this takes ~30s)' : 'Send Test Digest'}
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="bg-white/5 border-white/10 p-6 mt-4">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
-                    <ExternalLink className="w-5 h-5 text-gray-400" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-medium mb-1">Daily Schedule</h3>
-                    <p className="text-sm text-gray-400">
-                      Your digest is sent automatically every day at {formatTimeWithTimezone(utcToHour(deliveryHourUtc, selectedTimezone), selectedTimezone)}.{' '}
-                      <button
-                        onClick={() => setActiveSection('schedule')}
-                        className="text-white underline"
-                      >
-                        Change time
-                      </button>
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          )}
         </div>
       </main>
     </div>
