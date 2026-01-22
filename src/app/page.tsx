@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'motion/react';
-import { ArrowRight, Mail, Sparkles, Clock, Target, Check, Zap } from 'lucide-react';
+import { ArrowRight, Mail, Sparkles, Clock, Target, Check, Zap, MessageSquare, TrendingUp, Inbox } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
 
@@ -149,7 +149,7 @@ export default function Home() {
                 </div>
                 <h3 className="text-2xl font-semibold mb-4 text-white">AI-drafted replies</h3>
                 <p className="text-gray-400 leading-relaxed text-base">
-                  Each opportunity comes with an AI-generated reply that matches your voice and adds value.
+                  Each opportunity comes with an AI-generated reply that matches your style and adds value.
                 </p>
               </Card>
             </motion.div>
@@ -169,6 +169,183 @@ export default function Home() {
                   Review, edit if needed, and reply—all from your email. No X app needed.
                 </p>
               </Card>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Replies That Sound Like You Section */}
+      <section className="py-24 px-6 border-t border-white/10">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            {/* Left Column - Text Content */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="space-y-12"
+            >
+              <div className="space-y-6">
+                <h2 className="text-5xl lg:text-6xl font-semibold leading-tight tracking-tight">
+                  Replies that sound like you.{' '}
+                  <span className="text-gray-500">On autopilot.</span>
+                </h2>
+              </div>
+
+              <div className="space-y-6">
+                {/* Bullet Point 1 */}
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+                    <Target className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <div className="pt-2">
+                    <p className="text-lg text-gray-300 leading-relaxed">
+                      Monitors accounts you pick, finds{' '}
+                      <span className="text-blue-400 font-medium">&quot;the best reply opportunities&quot;</span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Bullet Point 2 */}
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+                    <MessageSquare className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div className="pt-2">
+                    <p className="text-lg text-gray-300 leading-relaxed">
+                      Writes drafts in{' '}
+                      <span className="text-purple-400 font-medium">&quot;your actual style&quot;</span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Bullet Point 3 */}
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+                    <TrendingUp className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <div className="pt-2">
+                    <p className="text-lg text-gray-300 leading-relaxed">
+                      <span className="text-blue-400 font-medium">&quot;Learns and improves&quot;</span>{' '}
+                      the more you use it
+                    </p>
+                  </div>
+                </div>
+
+                {/* Bullet Point 4 */}
+                <div className="flex gap-4">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+                    <Inbox className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div className="pt-2">
+                    <p className="text-lg text-gray-300 leading-relaxed">
+                      Lands in your inbox every morning. Just copy, paste, post.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Right Column - Email Mockup */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
+              <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
+                {/* Email Header */}
+                <div className="bg-white/5 border-b border-white/10 px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
+                      <Inbox className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium">Your Daily Reply Digest</div>
+                      <div className="text-xs text-gray-500">XeroScroll · Today 7:00 AM</div>
+                    </div>
+                    <div className="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
+                      <span className="text-xs font-medium text-blue-400">Style Match: 87%</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Email Body */}
+                <div className="p-6 space-y-5">
+                  <div className="text-sm text-gray-400">
+                    Good morning! Here are your top reply opportunities:
+                  </div>
+
+                  {/* Reply Draft 1 */}
+                  <div className="bg-black/30 rounded-xl border border-white/5 p-5 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium">@sarah_designer</div>
+                        <div className="text-xs text-gray-500 truncate">
+                          &quot;Anyone have tips for better async team communication?&quot;
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-300 leading-relaxed">
+                      &quot;We switched to daily async standups last quarter and it&apos;s been game-changing.
+                      Key is keeping them structured: what you did, what&apos;s next, blockers.&quot;
+                    </div>
+                    <div className="flex gap-2">
+                      <button className="px-3 py-1.5 text-xs font-medium bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors">
+                        Copy & Post
+                      </button>
+                      <button className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-gray-300 transition-colors">
+                        Edit
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Reply Draft 2 */}
+                  <div className="bg-black/30 rounded-xl border border-white/5 p-5 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium">@devjones</div>
+                        <div className="text-xs text-gray-500 truncate">
+                          &quot;What tools are you using for API monitoring in 2026?&quot;
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-300 leading-relaxed">
+                      &quot;Still a huge fan of Datadog for this. The alerting is solid and integrates
+                      nicely with Slack. Worth the price if you&apos;re scaling.&quot;
+                    </div>
+                    <div className="flex gap-2">
+                      <button className="px-3 py-1.5 text-xs font-medium bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors">
+                        Copy & Post
+                      </button>
+                      <button className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-gray-300 transition-colors">
+                        Edit
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Reply Draft 3 - Faded */}
+                  <div className="bg-black/30 rounded-xl border border-white/5 p-5 space-y-3 opacity-50">
+                    <div className="flex items-start gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-teal-500 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium">@marketing_maya</div>
+                        <div className="text-xs text-gray-500 truncate">
+                          &quot;How do you balance growth tactics with brand building?&quot;
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-300 leading-relaxed">
+                      &quot;Think of growth as experiments and brand as the foundation...&quot;
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Decorative Glow */}
+              <div className="absolute -inset-4 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-3xl blur-3xl -z-10" />
             </motion.div>
           </div>
         </div>
@@ -305,7 +482,7 @@ export default function Home() {
                   </li>
                   <li className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-black mt-0.5 flex-shrink-0" />
-                    <span>AI replies in your voice</span>
+                    <span>AI replies in your style</span>
                   </li>
                   <li className="flex items-start gap-3">
                     <Check className="w-5 h-5 text-black mt-0.5 flex-shrink-0" />
