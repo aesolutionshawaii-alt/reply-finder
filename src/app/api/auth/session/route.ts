@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
       authenticated: true,
       email: user.email,
       status: user.status,
-      plan: user.plan || 'pro',
+      plan: user.plan || 'free',
       deliveryHourUtc: user.delivery_hour_utc ?? 16,
       accounts: accounts.map(a => a.handle),
       profile: profile ? {
