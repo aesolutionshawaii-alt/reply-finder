@@ -246,7 +246,7 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
             >
-              <Card className="p-10 bg-white/5 border-white/10 h-full">
+              <Card className="py-12 px-10 bg-white/5 border-white/10 h-full">
                 <div className="mb-8">
                   <h3 className="text-2xl font-semibold mb-2">Free</h3>
                   <div className="text-4xl font-bold mb-1">$0</div>
@@ -282,7 +282,7 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
             >
-              <Card className="p-10 bg-white text-black h-full relative overflow-hidden">
+              <Card className="py-12 px-10 bg-white text-black h-full relative overflow-hidden">
                 <div className="absolute top-4 right-4">
                   <div className="px-3 py-1 bg-black/10 rounded-full text-xs font-medium">
                     POPULAR
