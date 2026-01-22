@@ -112,6 +112,7 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (err) {
     console.error('Google OAuth callback error:', err);
-    return NextResponse.redirect(new URL('/dashboard?error=callback_failed', request.url));
+    const errorMsg = err instanceof Error ? err.message : 'unknown';
+    return NextResponse.redirect(new URL(`/dashboard?error=callback_failed&detail=${encodeURIComponent(errorMsg)}`, request.url));
   }
 }
