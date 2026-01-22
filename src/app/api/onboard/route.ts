@@ -44,22 +44,25 @@ export async function POST(request: NextRequest) {
       return handle.replace(/^@/, '').trim();
     });
 
-    // Fetch profile info for each account (verification status, display name)
-    const accountsWithProfiles = await Promise.all(
-      handles.map(async (handle) => {
-        try {
-          const profile = await fetchUserProfile(handle);
-          return {
-            handle,
-            name: profile?.name || undefined,
-            isVerified: profile?.isVerified || false,
-            profilePicture: profile?.profilePicture || undefined,
-          };
-        } catch {
-          return { handle, name: undefined, isVerified: false, profilePicture: undefined };
-        }
-      })
-    );
+    // Fetch profile info sequentially with delay to avoid rate limits
+    const accountsWithProfiles = [];
+    for (const handle of handles) {
+      try {
+        const profile = await fetchUserProfile(handle);
+        accountsWithProfiles.push({
+          handle,
+          name: profile?.name || undefined,
+          isVerified: profile?.isVerified || false,
+          profilePicture: profile?.profilePicture || undefined,
+        });
+      } catch {
+        accountsWithProfiles.push({ handle, name: undefined, isVerified: false, profilePicture: undefined });
+      }
+      // Small delay between requests to avoid rate limiting
+      if (handles.indexOf(handle) < handles.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
 
     // Save accounts
     await saveMonitoredAccounts(user.id, accountsWithProfiles);
