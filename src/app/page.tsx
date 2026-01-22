@@ -1,13 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import { motion } from 'motion/react';
 import { ArrowRight, Mail, Sparkles, Clock, Target, Check, Zap } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
 
 export default function Home() {
-  const [email, setEmail] = useState('');
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -15,17 +13,17 @@ export default function Home() {
       <nav className="border-b border-white/10 bg-black/50 backdrop-blur-xl fixed top-0 w-full z-50">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Zap className="w-5 h-5" />
-            <span className="font-semibold text-lg">XeroScroll</span>
+            <Zap className="w-6 h-6" />
+            <span className="font-semibold text-xl">XeroScroll</span>
           </div>
-          <div className="flex items-center gap-4">
-            <a href="#pricing" className="text-sm text-gray-400 hover:text-white transition-colors">
+          <div className="flex items-center gap-6">
+            <a href="#pricing" className="text-base text-gray-400 hover:text-white transition-colors">
               Pricing
             </a>
             <a href="/dashboard">
-              <Button variant="outline" size="sm" className="border-white/10 hover:bg-white/5">
+              <button className="px-5 py-2 text-base font-medium border border-white/40 rounded-lg hover:bg-white/5 transition-colors">
                 Sign In
-              </Button>
+              </button>
             </a>
           </div>
         </div>
@@ -55,24 +53,15 @@ export default function Home() {
               30 seconds a day. No feed scrolling required.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <div className="flex gap-2 w-full sm:w-auto">
-                <input
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 flex-1 sm:w-64"
-                />
-                <a href="/signup">
-                  <Button className="bg-white text-black hover:bg-gray-200 gap-2">
-                    Start Free
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </a>
-              </div>
+            <div className="flex justify-center">
+              <a href="/signup">
+                <Button className="bg-white text-black hover:bg-gray-200 gap-2 px-8 py-4 text-lg">
+                  Start Free
+                  <ArrowRight className="w-5 h-5" />
+                </Button>
+              </a>
             </div>
-            <p className="text-sm text-gray-500 mt-4">Free tier available. No credit card required.</p>
+            <p className="text-sm text-gray-500 mt-6">Free tier available. No credit card required.</p>
           </motion.div>
         </div>
       </section>
@@ -130,19 +119,19 @@ export default function Home() {
             <p className="text-gray-400 text-lg">Three simple steps to grow your X presence</p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
             >
-              <Card className="p-8 bg-white/5 border-white/10 hover:bg-white/[0.07] transition-all">
-                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-6">
+              <Card className="p-10 bg-white/5 border-white/10 hover:bg-white/[0.07] transition-all h-full">
+                <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center mb-8">
                   <Mail className="w-6 h-6" />
                 </div>
-                <h3 className="text-2xl font-semibold mb-3">Daily digest</h3>
-                <p className="text-gray-400 leading-relaxed">
+                <h3 className="text-2xl font-semibold mb-4 text-white">Daily digest</h3>
+                <p className="text-gray-400 leading-relaxed text-base">
                   Every morning, get an email with the best reply opportunities from accounts you care about.
                 </p>
               </Card>
@@ -154,12 +143,12 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
             >
-              <Card className="p-8 bg-white/5 border-white/10 hover:bg-white/[0.07] transition-all">
-                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-6">
+              <Card className="p-10 bg-white/5 border-white/10 hover:bg-white/[0.07] transition-all h-full">
+                <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center mb-8">
                   <Sparkles className="w-6 h-6" />
                 </div>
-                <h3 className="text-2xl font-semibold mb-3">AI-drafted replies</h3>
-                <p className="text-gray-400 leading-relaxed">
+                <h3 className="text-2xl font-semibold mb-4 text-white">AI-drafted replies</h3>
+                <p className="text-gray-400 leading-relaxed text-base">
                   Each opportunity comes with an AI-generated reply that matches your voice and adds value.
                 </p>
               </Card>
@@ -171,12 +160,12 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ delay: 0.3 }}
             >
-              <Card className="p-8 bg-white/5 border-white/10 hover:bg-white/[0.07] transition-all">
-                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-6">
+              <Card className="p-10 bg-white/5 border-white/10 hover:bg-white/[0.07] transition-all h-full">
+                <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center mb-8">
                   <Target className="w-6 h-6" />
                 </div>
-                <h3 className="text-2xl font-semibold mb-3">One-click reply</h3>
-                <p className="text-gray-400 leading-relaxed">
+                <h3 className="text-2xl font-semibold mb-4 text-white">One-click reply</h3>
+                <p className="text-gray-400 leading-relaxed text-base">
                   Review, edit if needed, and reply—all from your email. No X app needed.
                 </p>
               </Card>
