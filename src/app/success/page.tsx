@@ -290,7 +290,7 @@ function SuccessContent() {
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold mb-2">Payment successful!</h1>
         <p className="text-gray-600 mb-8">
-          Let&apos;s set up your voice profile so XeroScroll can write replies that sound like you.
+          Let&apos;s set up your writing style so XeroScroll can write replies that sound like you.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-8">
@@ -312,7 +312,7 @@ function SuccessContent() {
           <div className="bg-blue-50 p-6 rounded-lg">
             <h2 className="text-lg font-semibold mb-2">Import from X (optional)</h2>
             <p className="text-sm text-gray-600 mb-4">
-              We can pull your bio and recent replies to help match your voice.
+              We can pull your bio and recent replies to help match your style.
             </p>
             <div className="flex gap-2">
               <input
@@ -389,7 +389,7 @@ function SuccessContent() {
           {/* Voice Picker */}
           <div className="space-y-6">
             <div>
-              <h2 className="text-lg font-semibold">Your Voice Style</h2>
+              <h2 className="text-lg font-semibold">Your Writing Style</h2>
               <p className="text-sm text-gray-600">
                 Pick the reply that sounds most like how you&apos;d respond.
               </p>

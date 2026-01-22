@@ -351,7 +351,7 @@ export default function VoiceSetupWizard({ initialData, onSave, onCancel }: Voic
                     </Button>
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
-                    We'll fetch your bio and recent tweets to help match your voice
+                    We'll fetch your bio and recent tweets to help match your style
                   </p>
                 </div>
 
@@ -627,7 +627,7 @@ export default function VoiceSetupWizard({ initialData, onSave, onCancel }: Voic
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
                     {confidence >= 70
-                      ? 'Excellent! Your replies will closely match your voice.'
+                      ? 'Excellent! Your replies will closely match your style.'
                       : confidence >= 40
                       ? 'Good start! Add more details to improve accuracy.'
                       : 'Basic profile. Consider completing more sections.'}
@@ -651,7 +651,7 @@ export default function VoiceSetupWizard({ initialData, onSave, onCancel }: Voic
                   </div>
 
                   <div className="p-4 bg-white/5 rounded-lg">
-                    <h4 className="text-sm font-medium text-gray-400 mb-2">Voice Style</h4>
+                    <h4 className="text-sm font-medium text-gray-400 mb-2">Writing Style</h4>
                     <p className="text-white">{Object.keys(voiceAttributes).length} of 5 questions answered</p>
                     {Object.entries(voiceAttributes).slice(0, 2).map(([key, value]) => (
                       <p key={key} className="text-sm text-gray-400 mt-1 capitalize">

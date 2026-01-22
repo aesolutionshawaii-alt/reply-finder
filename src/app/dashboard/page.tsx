@@ -566,7 +566,7 @@ function DashboardContent() {
         throw new Error(data.error || 'Failed to save');
       }
 
-      setSuccess('Profile saved! The AI will use this to write replies in your voice.');
+      setSuccess('Profile saved! The AI will use this to write replies that match your style.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save profile');
     } finally {
@@ -1269,7 +1269,7 @@ function DashboardContent() {
                 <>
                   <SectionHeader
                     title="Voice Setup Wizard"
-                    description="Complete these steps to help the AI write replies in your voice."
+                    description="Complete these steps to help the AI write replies that match your style."
                   />
                   <VoiceSetupWizard
                     initialData={{
@@ -1314,7 +1314,7 @@ function DashboardContent() {
                         setTone(data.tone);
                         setVoiceConfidence(result.voiceConfidence || 0);
                         setShowVoiceWizard(false);
-                        setSuccess('Voice profile saved! Your replies will now better match your voice.');
+                        setSuccess('Writing style saved! Your replies will now better match how you write.');
                         // Refresh user data
                         checkSession();
                       } catch (err) {
@@ -1330,7 +1330,7 @@ function DashboardContent() {
                 <>
                   <SectionHeader
                     title="Your Profile"
-                    description="Tell us about yourself so the AI can write replies in your voice."
+                    description="Tell us about yourself so the AI can write replies that match your style."
                   />
 
                   {/* Voice Confidence Card */}
@@ -1341,7 +1341,7 @@ function DashboardContent() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-medium">Voice Confidence</h3>
+                          <h3 className="font-medium">Style Match</h3>
                           <span className={`text-xl font-bold ${voiceConfidence >= 70 ? 'text-green-400' : voiceConfidence >= 40 ? 'text-yellow-400' : 'text-gray-400'}`}>
                             {voiceConfidence}%
                           </span>
@@ -1356,18 +1356,19 @@ function DashboardContent() {
                         </div>
                         <p className="text-sm text-gray-400 mb-3">
                           {voiceConfidence >= 70
-                            ? 'Excellent! Your replies closely match your voice.'
+                            ? 'Excellent! Your replies will closely match your style.'
                             : voiceConfidence >= 40
-                            ? 'Good start! Complete the voice wizard for better results.'
-                            : 'Set up your voice profile for AI replies that sound like you.'}
+                            ? 'Good start! Complete the setup for better results.'
+                            : 'Set up your writing style for AI replies that sound like you.'}
                         </p>
                         <Button
                           onClick={() => setShowVoiceWizard(true)}
+                          variant="ghost"
                           className="bg-purple-500 hover:bg-purple-600 text-white"
                           size="sm"
                         >
                           <Sparkles className="w-4 h-4 mr-2" />
-                          {voiceConfidence > 0 ? 'Improve Voice Profile' : 'Set Up Voice Profile'}
+                          {voiceConfidence > 0 ? 'Improve Writing Style' : 'Set Up Writing Style'}
                         </Button>
                       </div>
                     </div>
@@ -1424,7 +1425,7 @@ function DashboardContent() {
                         <textarea
                           value={exampleReplies}
                           onChange={(e) => setExampleReplies(e.target.value)}
-                          placeholder="Paste 2-3 replies you've written to help match your voice"
+                          placeholder="Paste 2-3 replies you've written to help match your style"
                           rows={4}
                           className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20"
                         />
