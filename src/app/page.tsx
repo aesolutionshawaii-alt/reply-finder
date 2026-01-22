@@ -318,10 +318,10 @@ export default function Home() {
                 </ul>
 
                 <a href="/api/checkout" className="mt-auto">
-                  <Button className="w-full bg-black text-white hover:bg-black/90 gap-2">
+                  <button className="w-full bg-black text-white hover:bg-black/90 inline-flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-colors">
                     Start Pro
                     <ArrowRight className="w-4 h-4" />
-                  </Button>
+                  </button>
                 </a>
               </Card>
             </motion.div>
