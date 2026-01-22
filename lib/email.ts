@@ -2,6 +2,16 @@ import { Resend } from 'resend';
 
 let resendClient: Resend | null = null;
 
+// HTML escape to prevent XSS in emails
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // Get admin emails from env
 function getAdminEmails(): string[] {
   return process.env.ADMIN_EMAILS?.split(',').map(e => e.trim()) || [];
@@ -205,14 +215,14 @@ export async function sendDigestEmail(
                 <table cellpadding="0" cellspacing="0" border="0" width="100%">
                   <tr>
                     <td>
-                      <span style="font-size: 15px; font-weight: 600; color: #ffffff;">${opp.authorName}</span>
-                      <span style="font-size: 14px; color: #71717a;"> @${opp.author}</span>
+                      <span style="font-size: 15px; font-weight: 600; color: #ffffff;">${escapeHtml(opp.authorName)}</span>
+                      <span style="font-size: 14px; color: #71717a;"> @${escapeHtml(opp.author)}</span>
                     </td>
                   </tr>
                 </table>
                 <!-- Tweet text -->
                 <p style="margin: 12px 0 0 0; font-size: 15px; line-height: 1.5; color: #d4d4d8;">
-                  ${opp.text.substring(0, 280)}${opp.text.length > 280 ? '...' : ''}
+                  ${escapeHtml(opp.text.substring(0, 280))}${opp.text.length > 280 ? '...' : ''}
                 </p>
                 <!-- Stats -->
                 <p style="margin: 12px 0 0 0; font-size: 13px; color: #71717a;">
@@ -224,7 +234,7 @@ export async function sendDigestEmail(
                   <tr>
                     <td style="background: #27272a; border-radius: 8px; padding: 16px; border-left: 3px solid #a3a3a3;">
                       <p style="margin: 0 0 8px 0; font-size: 11px; font-weight: 600; color: #a3a3a3; text-transform: uppercase; letter-spacing: 0.5px;">Draft Reply</p>
-                      <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #e4e4e7;">${opp.draftReply}</p>
+                      <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #e4e4e7;">${escapeHtml(opp.draftReply)}</p>
                     </td>
                   </tr>
                 </table>

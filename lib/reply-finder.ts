@@ -3,6 +3,8 @@ import { MonitoredAccount, UserProfile } from './db';
 import { ReplyOpportunity } from './email';
 import { generateReply, UserContext, TweetContext } from './claude';
 
+// Political keywords - use word boundary matching to avoid false positives
+// e.g., "musk" shouldn't match "musk perfume"
 const POLITICAL_KEYWORDS = [
   'trump', 'biden', 'democrat', 'republican', 'gop', 'maga',
   'congress', 'senate', 'election', 'vote', 'voting', 'ballot',
@@ -13,12 +15,31 @@ const POLITICAL_KEYWORDS = [
   'socialism', 'communism', 'fascism', 'marxist',
   'antifa', 'blm', 'woke', 'wokeism',
   'capitol', 'insurrection', 'impeach',
-  'elon musk', 'doge', 'musk',
+  'elon musk', 'doge',
 ];
+
+// Separate list for keywords that need exact word boundary matching
+// to avoid false positives (e.g., "musk" shouldn't match "musk perfume")
+const POLITICAL_EXACT_WORDS = ['musk'];
 
 function isPolitical(text: string): boolean {
   const lower = text.toLowerCase();
-  return POLITICAL_KEYWORDS.some(keyword => lower.includes(keyword));
+
+  // Check regular keywords with simple includes
+  if (POLITICAL_KEYWORDS.some(keyword => lower.includes(keyword))) {
+    return true;
+  }
+
+  // Check exact word matches using word boundaries
+  for (const word of POLITICAL_EXACT_WORDS) {
+    const regex = new RegExp(`\\b${word}\\b`, 'i');
+    // Only match if it looks like a person reference (near "elon", "@", etc.)
+    if (regex.test(lower) && (lower.includes('elon') || lower.includes('@elonmusk'))) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function isQualityTweet(tweet: Tweet, skipPolitical: boolean = true): boolean {

@@ -14,6 +14,19 @@ function getAnthropic(): Anthropic {
   return anthropicClient;
 }
 
+// Rate limiting: track last request time
+let lastRequestTime = 0;
+const MIN_REQUEST_INTERVAL_MS = 200; // 200ms between requests (5 req/sec max)
+
+async function rateLimitedWait(): Promise<void> {
+  const now = Date.now();
+  const elapsed = now - lastRequestTime;
+  if (elapsed < MIN_REQUEST_INTERVAL_MS) {
+    await new Promise(resolve => setTimeout(resolve, MIN_REQUEST_INTERVAL_MS - elapsed));
+  }
+  lastRequestTime = Date.now();
+}
+
 export interface TweetContext {
   authorHandle: string;
   authorName: string;
@@ -212,6 +225,9 @@ Good: "The hard part isn't the code, it's convincing stakeholders to wait." (per
 
 Reply only with the tweet text, no quotes, no explanation.`;
 
+  // Rate limiting to avoid API throttling
+  await rateLimitedWait();
+
   const response = await anthropic.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 150,
@@ -258,6 +274,11 @@ export async function generateRepliesBatch(
         // Use tweet text as key since we don't have tweet IDs here
         replies.set(tweet.text, reply);
       }
+    }
+
+    // Add delay between batches to avoid rate limiting
+    if (i + batchSize < tweets.length) {
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }
 

@@ -68,13 +68,15 @@ export async function createFreeUser(email: string): Promise<User> {
 export async function getUserByEmail(email: string): Promise<User | null> {
   const sql = getDb();
   const result = await sql`SELECT * FROM users WHERE email = ${email}`;
-  return result[0] as User || null;
+  if (result.length === 0) return null;
+  return result[0] as User;
 }
 
 export async function getUserByGoogleId(googleId: string): Promise<User | null> {
   const sql = getDb();
   const result = await sql`SELECT * FROM users WHERE google_id = ${googleId}`;
-  return result[0] as User || null;
+  if (result.length === 0) return null;
+  return result[0] as User;
 }
 
 export async function createUserWithGoogle(email: string, googleId: string, name?: string): Promise<User> {
@@ -102,7 +104,8 @@ export async function linkGoogleId(userId: number, googleId: string): Promise<vo
 export async function getUserByStripeCustomerId(customerId: string): Promise<User | null> {
   const sql = getDb();
   const result = await sql`SELECT * FROM users WHERE stripe_customer_id = ${customerId}`;
-  return result[0] as User || null;
+  if (result.length === 0) return null;
+  return result[0] as User;
 }
 
 export async function updateUserStatus(stripeCustomerId: string, status: string): Promise<void> {
@@ -364,7 +367,8 @@ export function calculateVoiceConfidence(profile: SaveUserProfileInput): number 
 export async function getUserProfile(userId: number): Promise<UserProfile | null> {
   const sql = getDb();
   const result = await sql`SELECT * FROM user_profiles WHERE user_id = ${userId}`;
-  return result[0] as UserProfile || null;
+  if (result.length === 0) return null;
+  return result[0] as UserProfile;
 }
 
 // ============ AUTH: Magic Links & Sessions ============
@@ -430,7 +434,8 @@ export async function getSessionByToken(token: string): Promise<(Session & { ema
     WHERE s.token = ${token}
       AND s.expires_at > NOW()
   `;
-  return result[0] as (Session & { email: string }) || null;
+  if (result.length === 0) return null;
+  return result[0] as (Session & { email: string });
 }
 
 export async function deleteSession(token: string): Promise<void> {
@@ -485,7 +490,8 @@ export async function getAllUsersWithStats(): Promise<UserWithStats[]> {
 export async function getUserById(id: number): Promise<User | null> {
   const sql = getDb();
   const result = await sql`SELECT * FROM users WHERE id = ${id}`;
-  return result[0] as User || null;
+  if (result.length === 0) return null;
+  return result[0] as User;
 }
 
 export async function updateUserPlan(userId: number, plan: 'free' | 'pro', status?: string): Promise<void> {
