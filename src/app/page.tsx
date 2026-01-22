@@ -126,7 +126,7 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
             >
-              <Card className="p-10 bg-white/5 border-white/10 hover:bg-white/[0.07] transition-all h-full">
+              <Card className="p-10 bg-white/5 border-white/10 hover:bg-white/[0.07] hover:scale-105 transition-all duration-300 h-full">
                 <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center mb-8">
                   <Mail className="w-6 h-6" />
                 </div>
@@ -143,7 +143,7 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
             >
-              <Card className="p-10 bg-white/5 border-white/10 hover:bg-white/[0.07] transition-all h-full">
+              <Card className="p-10 bg-white/5 border-white/10 hover:bg-white/[0.07] hover:scale-105 transition-all duration-300 h-full">
                 <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center mb-8">
                   <Sparkles className="w-6 h-6" />
                 </div>
@@ -160,7 +160,7 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ delay: 0.3 }}
             >
-              <Card className="p-10 bg-white/5 border-white/10 hover:bg-white/[0.07] transition-all h-full">
+              <Card className="p-10 bg-white/5 border-white/10 hover:bg-white/[0.07] hover:scale-105 transition-all duration-300 h-full">
                 <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center mb-8">
                   <Target className="w-6 h-6" />
                 </div>
@@ -246,7 +246,7 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
             >
-              <Card className="p-8 bg-white/5 border-white/10 h-[493px] flex flex-col">
+              <Card className="p-8 bg-white/5 border-white/10 h-[493px] flex flex-col hover:scale-105 transition-all duration-300">
                 <div className="mb-6">
                   <h3 className="text-2xl font-semibold mb-2">Free</h3>
                   <div className="text-4xl font-bold mb-1">$0</div>
@@ -282,7 +282,7 @@ export default function Home() {
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
             >
-              <Card className="p-8 bg-white text-black h-[493px] flex flex-col relative overflow-hidden">
+              <Card className="p-8 bg-white text-black h-[493px] flex flex-col relative overflow-hidden hover:scale-105 transition-all duration-300">
                 <div className="absolute top-4 right-4">
                   <div className="px-3 py-1 bg-black/10 rounded-full text-xs font-medium">
                     POPULAR
