@@ -67,7 +67,7 @@ export default function Home() {
       </section>
 
       {/* Stats Section */}
-      <section className="pb-20 px-6">
+      <section className="py-24 px-6">
         <div className="max-w-5xl mx-auto">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <motion.div
@@ -77,8 +77,8 @@ export default function Home() {
               transition={{ delay: 0.1 }}
               className="text-center"
             >
-              <div className="text-5xl font-bold mb-2">30s</div>
-              <div className="text-gray-400">Daily time investment</div>
+              <div className="text-6xl md:text-7xl font-bold mb-3">30s</div>
+              <div className="text-gray-400 text-lg">Daily time investment</div>
             </motion.div>
 
             <motion.div
@@ -88,8 +88,8 @@ export default function Home() {
               transition={{ delay: 0.2 }}
               className="text-center"
             >
-              <div className="text-5xl font-bold mb-2">0</div>
-              <div className="text-gray-400">Hours scrolling</div>
+              <div className="text-6xl md:text-7xl font-bold mb-3">0</div>
+              <div className="text-gray-400 text-lg">Hours scrolling</div>
             </motion.div>
 
             <motion.div
@@ -99,8 +99,8 @@ export default function Home() {
               transition={{ delay: 0.3 }}
               className="text-center"
             >
-              <div className="text-5xl font-bold mb-2">10x</div>
-              <div className="text-gray-400">More meaningful replies</div>
+              <div className="text-6xl md:text-7xl font-bold mb-3">10x</div>
+              <div className="text-gray-400 text-lg">More meaningful replies</div>
             </motion.div>
           </div>
         </div>
