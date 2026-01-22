@@ -246,9 +246,10 @@ export interface Session {
 
 export async function createMagicLink(email: string, token: string, expiresInMinutes: number = 15): Promise<MagicLink> {
   const sql = getDb();
+  const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000);
   const result = await sql`
     INSERT INTO magic_links (email, token, expires_at)
-    VALUES (${email}, ${token}, NOW() + INTERVAL '${expiresInMinutes} minutes')
+    VALUES (${email}, ${token}, ${expiresAt})
     RETURNING *
   `;
   return result[0] as MagicLink;
@@ -269,9 +270,10 @@ export async function verifyMagicLink(token: string): Promise<string | null> {
 
 export async function createSession(userId: number, token: string, expiresInDays: number = 30): Promise<Session> {
   const sql = getDb();
+  const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000);
   const result = await sql`
     INSERT INTO sessions (user_id, token, expires_at)
-    VALUES (${userId}, ${token}, NOW() + INTERVAL '${expiresInDays} days')
+    VALUES (${userId}, ${token}, ${expiresAt})
     RETURNING *
   `;
   return result[0] as Session;
