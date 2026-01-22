@@ -175,31 +175,31 @@ export default function Home() {
       </section>
 
       {/* Replies That Sound Like You Section */}
-      <section className="py-24 px-6 border-t border-white/10">
+      <section className="py-12 lg:py-24 px-4 sm:px-6 border-t border-white/10">
         <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
             {/* Left Column - Text Content */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="space-y-12"
+              className="space-y-6 lg:space-y-12"
             >
-              <div className="space-y-6">
-                <h2 className="text-5xl lg:text-6xl font-semibold leading-tight tracking-tight">
+              <div className="space-y-4 lg:space-y-6">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-semibold leading-tight tracking-tight">
                   Replies that sound like you.{' '}
                   <span className="text-gray-500">On autopilot.</span>
                 </h2>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-4 lg:space-y-6">
                 {/* Bullet Point 1 */}
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                    <Target className="w-5 h-5 text-blue-400" />
+                <div className="flex gap-3 lg:gap-4">
+                  <div className="flex-shrink-0 w-10 h-10 lg:w-12 lg:h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+                    <Target className="w-4 h-4 lg:w-5 lg:h-5 text-blue-400" />
                   </div>
-                  <div className="pt-2">
-                    <p className="text-lg text-gray-300 leading-relaxed">
+                  <div className="pt-1.5 lg:pt-2">
+                    <p className="text-base lg:text-lg text-gray-300 leading-relaxed">
                       Monitors accounts you pick, finds{' '}
                       <span className="text-blue-400 font-medium">&quot;the best reply opportunities&quot;</span>
                     </p>
@@ -207,12 +207,12 @@ export default function Home() {
                 </div>
 
                 {/* Bullet Point 2 */}
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                    <MessageSquare className="w-5 h-5 text-purple-400" />
+                <div className="flex gap-3 lg:gap-4">
+                  <div className="flex-shrink-0 w-10 h-10 lg:w-12 lg:h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+                    <MessageSquare className="w-4 h-4 lg:w-5 lg:h-5 text-purple-400" />
                   </div>
-                  <div className="pt-2">
-                    <p className="text-lg text-gray-300 leading-relaxed">
+                  <div className="pt-1.5 lg:pt-2">
+                    <p className="text-base lg:text-lg text-gray-300 leading-relaxed">
                       Writes drafts in{' '}
                       <span className="text-purple-400 font-medium">&quot;your actual style&quot;</span>
                     </p>
@@ -220,12 +220,12 @@ export default function Home() {
                 </div>
 
                 {/* Bullet Point 3 */}
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                    <TrendingUp className="w-5 h-5 text-blue-400" />
+                <div className="flex gap-3 lg:gap-4">
+                  <div className="flex-shrink-0 w-10 h-10 lg:w-12 lg:h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+                    <TrendingUp className="w-4 h-4 lg:w-5 lg:h-5 text-blue-400" />
                   </div>
-                  <div className="pt-2">
-                    <p className="text-lg text-gray-300 leading-relaxed">
+                  <div className="pt-1.5 lg:pt-2">
+                    <p className="text-base lg:text-lg text-gray-300 leading-relaxed">
                       <span className="text-blue-400 font-medium">&quot;Learns and improves&quot;</span>{' '}
                       the more you use it
                     </p>
@@ -233,12 +233,12 @@ export default function Home() {
                 </div>
 
                 {/* Bullet Point 4 */}
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                    <Inbox className="w-5 h-5 text-purple-400" />
+                <div className="flex gap-3 lg:gap-4">
+                  <div className="flex-shrink-0 w-10 h-10 lg:w-12 lg:h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+                    <Inbox className="w-4 h-4 lg:w-5 lg:h-5 text-purple-400" />
                   </div>
-                  <div className="pt-2">
-                    <p className="text-lg text-gray-300 leading-relaxed">
+                  <div className="pt-1.5 lg:pt-2">
+                    <p className="text-base lg:text-lg text-gray-300 leading-relaxed">
                       Lands in your inbox every morning. Just copy, paste, post.
                     </p>
                   </div>
@@ -255,89 +255,89 @@ export default function Home() {
             >
               <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-2xl border border-white/10 overflow-hidden shadow-2xl">
                 {/* Email Header */}
-                <div className="bg-white/5 border-b border-white/10 px-6 py-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
-                      <Inbox className="w-4 h-4 text-blue-400" />
+                <div className="bg-white/5 border-b border-white/10 px-4 lg:px-6 py-3 lg:py-4">
+                  <div className="flex items-center gap-2 lg:gap-3">
+                    <div className="w-7 h-7 lg:w-8 lg:h-8 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center">
+                      <Inbox className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-blue-400" />
                     </div>
-                    <div className="flex-1">
-                      <div className="text-sm font-medium">Your Daily Reply Digest</div>
-                      <div className="text-xs text-gray-500">XeroScroll · Today 7:00 AM</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs lg:text-sm font-medium truncate">Your Daily Reply Digest</div>
+                      <div className="text-[10px] lg:text-xs text-gray-500">XeroScroll · Today 7:00 AM</div>
                     </div>
-                    <div className="px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20">
-                      <span className="text-xs font-medium text-blue-400">Style Match: 87%</span>
+                    <div className="px-2 lg:px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 flex-shrink-0">
+                      <span className="text-[10px] lg:text-xs font-medium text-blue-400">Style Match: 87%</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Email Body */}
-                <div className="p-6 space-y-5">
+                <div className="p-4 lg:p-6 space-y-4 lg:space-y-5">
                   <div className="text-sm text-gray-400">
                     Good morning! Here are your top reply opportunities:
                   </div>
 
                   {/* Reply Draft 1 */}
-                  <div className="bg-black/30 rounded-xl border border-white/5 p-5 space-y-3">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex-shrink-0" />
+                  <div className="bg-black/30 rounded-xl border border-white/5 p-3 lg:p-5 space-y-2 lg:space-y-3">
+                    <div className="flex items-start gap-2 lg:gap-3">
+                      <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium">@sarah_designer</div>
-                        <div className="text-xs text-gray-500 truncate">
+                        <div className="text-xs lg:text-sm font-medium">@sarah_designer</div>
+                        <div className="text-[10px] lg:text-xs text-gray-500 truncate">
                           &quot;Anyone have tips for better async team communication?&quot;
                         </div>
                       </div>
                     </div>
-                    <div className="text-sm text-gray-300 leading-relaxed">
+                    <div className="text-xs lg:text-sm text-gray-300 leading-relaxed">
                       &quot;We switched to daily async standups last quarter and it&apos;s been game-changing.
                       Key is keeping them structured: what you did, what&apos;s next, blockers.&quot;
                     </div>
                     <div className="flex gap-2">
-                      <button className="px-3 py-1.5 text-xs font-medium bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors">
+                      <button className="px-2 lg:px-3 py-1 lg:py-1.5 text-[10px] lg:text-xs font-medium bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors">
                         Copy & Post
                       </button>
-                      <button className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-gray-300 transition-colors">
+                      <button className="px-2 lg:px-3 py-1 lg:py-1.5 text-[10px] lg:text-xs font-medium text-gray-400 hover:text-gray-300 transition-colors">
                         Edit
                       </button>
                     </div>
                   </div>
 
                   {/* Reply Draft 2 */}
-                  <div className="bg-black/30 rounded-xl border border-white/5 p-5 space-y-3">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex-shrink-0" />
+                  <div className="bg-black/30 rounded-xl border border-white/5 p-3 lg:p-5 space-y-2 lg:space-y-3">
+                    <div className="flex items-start gap-2 lg:gap-3">
+                      <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium">@devjones</div>
-                        <div className="text-xs text-gray-500 truncate">
+                        <div className="text-xs lg:text-sm font-medium">@devjones</div>
+                        <div className="text-[10px] lg:text-xs text-gray-500 truncate">
                           &quot;What tools are you using for API monitoring in 2026?&quot;
                         </div>
                       </div>
                     </div>
-                    <div className="text-sm text-gray-300 leading-relaxed">
+                    <div className="text-xs lg:text-sm text-gray-300 leading-relaxed">
                       &quot;Still a huge fan of Datadog for this. The alerting is solid and integrates
                       nicely with Slack. Worth the price if you&apos;re scaling.&quot;
                     </div>
                     <div className="flex gap-2">
-                      <button className="px-3 py-1.5 text-xs font-medium bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors">
+                      <button className="px-2 lg:px-3 py-1 lg:py-1.5 text-[10px] lg:text-xs font-medium bg-blue-500 hover:bg-blue-600 rounded-lg transition-colors">
                         Copy & Post
                       </button>
-                      <button className="px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-gray-300 transition-colors">
+                      <button className="px-2 lg:px-3 py-1 lg:py-1.5 text-[10px] lg:text-xs font-medium text-gray-400 hover:text-gray-300 transition-colors">
                         Edit
                       </button>
                     </div>
                   </div>
 
-                  {/* Reply Draft 3 - Faded */}
-                  <div className="bg-black/30 rounded-xl border border-white/5 p-5 space-y-3 opacity-50">
-                    <div className="flex items-start gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-teal-500 flex-shrink-0" />
+                  {/* Reply Draft 3 - Faded (Hidden on mobile) */}
+                  <div className="hidden sm:block bg-black/30 rounded-xl border border-white/5 p-3 lg:p-5 space-y-2 lg:space-y-3 opacity-50">
+                    <div className="flex items-start gap-2 lg:gap-3">
+                      <div className="w-8 h-8 lg:w-10 lg:h-10 rounded-full bg-gradient-to-br from-green-500 to-teal-500 flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium">@marketing_maya</div>
-                        <div className="text-xs text-gray-500 truncate">
+                        <div className="text-xs lg:text-sm font-medium">@marketing_maya</div>
+                        <div className="text-[10px] lg:text-xs text-gray-500 truncate">
                           &quot;How do you balance growth tactics with brand building?&quot;
                         </div>
                       </div>
                     </div>
-                    <div className="text-sm text-gray-300 leading-relaxed">
+                    <div className="text-xs lg:text-sm text-gray-300 leading-relaxed">
                       &quot;Think of growth as experiments and brand as the foundation...&quot;
                     </div>
                   </div>
