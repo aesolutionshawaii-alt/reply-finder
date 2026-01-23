@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { saveReplyFeedback, getUserById } from '../../../../lib/db';
+import { saveReplyFeedback, getUserById, updateVoiceConfidenceFromFeedback } from '../../../../lib/db';
 
 // Tracking endpoint for email clicks
 // GET /api/track?u={userId}&t={tweetId}&a={action}&d={draftReply}&r={redirect}
@@ -55,6 +55,11 @@ export async function GET(request: NextRequest) {
       decodeURIComponent(draftReply),
       feedbackType
     );
+
+    // Update voice confidence in background (subtle increase based on usage)
+    updateVoiceConfidenceFromFeedback(user.id).catch(err => {
+      console.error('Failed to update voice confidence:', err);
+    });
 
     // Redirect to the tweet
     if (redirect) {
