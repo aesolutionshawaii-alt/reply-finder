@@ -32,8 +32,8 @@ export async function POST(request: NextRequest) {
 
         if (!email || !customerId || !subscriptionId) {
           console.error('Missing required data in checkout session:', { email, customerId, subscriptionId });
-          // Return 200 anyway - Stripe shouldn't retry, and we have recovery via verify-checkout
-          break;
+          // Return 500 so Stripe will retry - user creation is critical
+          return NextResponse.json({ error: 'Missing required data' }, { status: 500 });
         }
 
         await createUser(email, customerId, subscriptionId);

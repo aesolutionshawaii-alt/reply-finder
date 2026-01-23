@@ -42,7 +42,6 @@ async function processUserDigest(userId: number, email: string): Promise<{ statu
 
 export async function GET(request: NextRequest) {
   const testEmail = request.nextUrl.searchParams.get('email');
-  const cronSecret = request.nextUrl.searchParams.get('secret');
 
   try {
     // If testing a specific user (from dashboard), require authentication
@@ -96,15 +95,11 @@ export async function GET(request: NextRequest) {
 
     // For the hourly cron (no email param), verify cron secret
     // Vercel Cron automatically sends CRON_SECRET in the Authorization header
+    // Security: Only accept Authorization header, not query params (which can be logged)
     const authHeader = request.headers.get('Authorization');
     const expectedSecret = process.env.CRON_SECRET;
 
-    // Allow if: valid CRON_SECRET in query param OR Authorization header matches
-    const isAuthorized =
-      (expectedSecret && cronSecret === expectedSecret) ||
-      (expectedSecret && authHeader === `Bearer ${expectedSecret}`);
-
-    if (!isAuthorized) {
+    if (!expectedSecret || authHeader !== `Bearer ${expectedSecret}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -172,8 +167,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (err) {
     console.error('Cron error:', err);
+    // Don't expose error details to client
     return NextResponse.json(
-      { error: 'Cron job failed', details: String(err) },
+      { error: 'Cron job failed' },
       { status: 500 }
     );
   }

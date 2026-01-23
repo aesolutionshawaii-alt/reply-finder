@@ -1,15 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserByEmail, saveMonitoredAccounts, saveUserProfile, calculateVoiceConfidence, VoiceAttributes, AvoidPattern, SampleTweet, SampleReply } from '../../../../lib/db';
 import { fetchUserProfile } from '../../../../lib/twitter';
+import { getSession } from '../../../../lib/auth';
+import { getStripe } from '../../../../lib/stripe';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, accounts, profile } = body;
+    const { accounts, profile, email: bodyEmail, stripeSessionId } = body;
 
-    if (!email || !accounts || !Array.isArray(accounts)) {
+    // Determine authenticated email via session OR valid Stripe session
+    let authenticatedEmail: string | null = null;
+
+    // First, try session cookie (for logged-in users)
+    const session = await getSession(request);
+    if (session) {
+      authenticatedEmail = session.email;
+    }
+    // If no session, try Stripe sessionId (for post-checkout onboarding)
+    else if (stripeSessionId) {
+      try {
+        const stripe = getStripe();
+        const stripeSession = await stripe.checkout.sessions.retrieve(stripeSessionId);
+        if (stripeSession.payment_status === 'paid' && stripeSession.customer_details?.email) {
+          authenticatedEmail = stripeSession.customer_details.email;
+        }
+      } catch (stripeError) {
+        console.error('Stripe session verification failed:', stripeError);
+      }
+    }
+
+    // Require authentication
+    if (!authenticatedEmail) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!accounts || !Array.isArray(accounts)) {
       return NextResponse.json(
-        { error: 'Missing email or accounts' },
+        { error: 'Missing accounts' },
         { status: 400 }
       );
     }
@@ -22,8 +50,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get user
-    const user = await getUserByEmail(email);
+    // Get user using authenticated email (not body email)
+    const user = await getUserByEmail(authenticatedEmail);
     if (!user) {
       return NextResponse.json(
         { error: 'User not found. Please complete checkout first.' },

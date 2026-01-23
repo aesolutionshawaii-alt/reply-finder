@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getUserByEmail, getMonitoredAccounts, getUserProfile } from '../../../../../lib/db';
+import { getSession } from '../../../../../lib/auth';
 
 export async function GET(request: NextRequest) {
-  const email = request.nextUrl.searchParams.get('email');
-
-  if (!email) {
-    return NextResponse.json({ error: 'Email required' }, { status: 400 });
-  }
-
   try {
-    const user = await getUserByEmail(email);
+    // Require authentication - use session email, not query param
+    const session = await getSession(request);
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const user = await getUserByEmail(session.email);
     if (!user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
