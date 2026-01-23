@@ -976,7 +976,7 @@ function DashboardContent() {
           </div>
         </div>
 
-        <div className="p-4 lg:p-8 max-w-3xl">
+        <div className="p-4 lg:p-8 max-w-3xl mx-auto">
           {/* Status Messages */}
           {error && (
             <div className="bg-red-500/10 border border-red-500/20 text-red-400 px-4 py-3 rounded-lg mb-6">
