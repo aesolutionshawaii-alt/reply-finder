@@ -690,6 +690,15 @@ function DashboardContent() {
       }));
 
       setImportAccounts(accountsWithSelection);
+
+      // Save handle to profile if not already set
+      if (!userData?.profile?.xHandle && cleanHandle) {
+        fetch('/api/admin/update-profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ xHandle: cleanHandle }),
+        }).catch(() => {}); // Fire and forget
+      }
     } catch (err) {
       setImportError(err instanceof Error ? err.message : 'Failed to fetch following');
     } finally {
