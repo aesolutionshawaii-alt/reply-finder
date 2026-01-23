@@ -254,7 +254,7 @@ function Sidebar({
             disabled={sendingDigest}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white transition-all ${
               sendingDigest
-                ? 'bg-green-600/80 animate-pulse cursor-wait'
+                ? 'bg-green-600 cursor-wait'
                 : 'bg-green-600 hover:bg-green-700'
             }`}
           >
