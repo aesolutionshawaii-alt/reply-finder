@@ -765,7 +765,8 @@ export default function VoiceSetupWizard({ initialData, onSave, onCancel }: Voic
             <Button
               onClick={handleSave}
               disabled={loading || !canProceed()}
-              className="bg-green-500 hover:bg-green-600 text-white"
+              variant="ghost"
+              className="bg-green-500 hover:bg-green-600"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
               Save Voice Profile
