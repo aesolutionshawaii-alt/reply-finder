@@ -1404,20 +1404,18 @@ function DashboardContent() {
                         </div>
                         {/* Info Card - Always Visible */}
                         <div className="mb-3 p-3 lg:p-4 bg-white/5 border border-white/10 rounded-lg">
-                          <p className="text-xs lg:text-sm font-medium text-gray-300 mb-2">Your replies get better every day.</p>
-                          <ul className="text-xs lg:text-sm space-y-1.5 mb-3">
-                            <li className="text-gray-500">0-40%: Basic - AI has minimal context, replies will be generic</li>
-                            <li className="text-yellow-400/90">40-70%: Good - AI knows your general style and preferences</li>
-                            <li className="text-green-400/90">70-100%: Excellent - AI can closely match how you actually write</li>
-                          </ul>
-                          <p className="text-xs lg:text-sm text-gray-400">
-                            At <span className="text-white font-medium">{voiceConfidence}%</span>,
-                            {voiceConfidence >= 70
-                              ? ' the AI has enough data to generate replies that sound like you. It also learns from which replies you use — the more you click, the better it gets at matching your voice.'
-                              : voiceConfidence >= 40
-                              ? ' the AI knows your general style. As you use replies from your daily digest, it learns what works for you and improves over time.'
-                              : ' set up your writing style and link your X account so the AI can learn how you write. Then use the replies in your daily digest — the AI learns from what you click.'}
-                          </p>
+                          <p className="text-xs lg:text-sm font-medium text-white mb-3">Adaptive Voice System</p>
+                          <div className="text-xs lg:text-sm text-gray-400 space-y-3">
+                            <p>Most AI tools ask for a "tone" and call it personalization. We built something different.</p>
+                            <p>When you sign up, you answer 5 quick scenarios — how you respond to good news, how you push back on bad takes, how you add value. That maps to your actual communication style, not a generic "friendly" or "professional" label.</p>
+                            <p>Link your X account and we pull your real tweets. The AI sees how you actually write — your sentence length, your humor, your quirks.</p>
+                            <p>Then it learns from you. Every reply you click in your daily email gets logged. Those become examples for future replies. The system notices what works for you and does more of it.</p>
+                            <div className="pt-2 text-gray-500">
+                              <p>Day 1: It gets the basics right.</p>
+                              <p>Week 2: It stops making mistakes you'd never make.</p>
+                              <p>Month 2: People can't tell the difference.</p>
+                            </div>
+                          </div>
                         </div>
 
                         <Button
