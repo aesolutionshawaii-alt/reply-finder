@@ -833,7 +833,7 @@ export async function getSentTweetIds(userId: number): Promise<string[]> {
       AND sent_at > ${cutoffDate}
   `;
 
-  return result.map((row: { tweet_id: string }) => row.tweet_id);
+  return result.map((row) => row.tweet_id as string);
 }
 
 /**
