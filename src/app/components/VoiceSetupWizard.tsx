@@ -690,54 +690,28 @@ export default function VoiceSetupWizard({ initialData, onSave, onCancel }: Voic
 
                   {/* Info Card */}
                   {showScoreInfo && (
-                    <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                    <div className="mt-4 p-4 bg-white/5 border border-white/10 rounded-lg">
                       <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <Info className="w-4 h-4 text-blue-400" />
-                          <span className="text-sm font-medium text-blue-400">What is Style Match?</span>
-                        </div>
+                        <span className="text-sm font-medium text-gray-300">What it means:</span>
                         <button
                           onClick={() => setShowScoreInfo(false)}
-                          className="p-1 hover:bg-white/10 rounded transition-colors"
+                          className="p-1 hover:bg-white/10 rounded transition-colors -mr-1 -mt-1"
                         >
-                          <XIcon className="w-4 h-4 text-gray-400" />
+                          <XIcon className="w-4 h-4 text-gray-500" />
                         </button>
                       </div>
-                      <p className="text-sm text-gray-300 mb-4">
-                        This is how confident the AI will be in matching your writing style when generating reply drafts.
-                      </p>
-
-                      <div className="mb-4">
-                        <p className="text-xs font-medium text-gray-400 mb-2">How it&apos;s calculated:</p>
-                        <ul className="text-xs text-gray-400 space-y-1">
-                          <li>• Name: 8 pts</li>
-                          <li>• Bio: 10 pts</li>
-                          <li>• Tone: 7 pts</li>
-                          <li>• Style picker (5 questions): 5 pts each = 25 pts</li>
-                          <li>• Positioning statement: 10 pts</li>
-                          <li>• Avoid patterns: 5 pts</li>
-                          <li>• X handle linked: 5 pts</li>
-                          <li>• X bio imported: 5 pts</li>
-                          <li>• Sample replies imported: up to 20 pts (5 per reply)</li>
-                        </ul>
-                      </div>
-
-                      <div className="mb-4">
-                        <p className="text-xs font-medium text-gray-400 mb-2">What it means:</p>
-                        <ul className="text-xs space-y-1">
-                          <li className="text-gray-500">• <span className="text-gray-400">0-40%:</span> Basic - AI has minimal context, replies will be generic</li>
-                          <li className="text-yellow-400/80">• <span className="text-yellow-400">40-70%:</span> Good - AI knows your general style and preferences</li>
-                          <li className="text-green-400/80">• <span className="text-green-400">70-100%:</span> Excellent - AI can closely match how you actually write</li>
-                        </ul>
-                      </div>
-
-                      <p className="text-xs text-gray-400">
+                      <ul className="text-sm space-y-1.5 mb-3">
+                        <li className="text-gray-500">0-40%: Basic - AI has minimal context, replies will be generic</li>
+                        <li className="text-yellow-400/90">40-70%: Good - AI knows your general style and preferences</li>
+                        <li className="text-green-400/90">70-100%: Excellent - AI can closely match how you actually write</li>
+                      </ul>
+                      <p className="text-sm text-gray-400">
                         At <span className="text-white font-medium">{confidence}%</span>,
                         {confidence >= 70
                           ? ' the AI has enough data to generate replies that sound like you. The more sample replies it imported from your X account, the better it can mimic your actual voice.'
                           : confidence >= 40
-                          ? ' the AI has a good foundation. Add more details or link your X account to improve accuracy.'
-                          : ' consider completing more sections to help the AI better match your style.'}
+                          ? ' the AI knows your general style. Link your X account and import sample replies to improve accuracy.'
+                          : ' set up your writing style and link your X account so the AI can learn how you write.'}
                       </p>
                     </div>
                   )}
