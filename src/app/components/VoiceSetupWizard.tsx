@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, ChevronRight, Check, Loader2, Download, X as XIcon, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Check, Loader2, Download, X as XIcon, Sparkles, Info, ChevronDown } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 
@@ -137,6 +137,7 @@ export default function VoiceSetupWizard({ initialData, onSave, onCancel }: Voic
   const [importLoading, setImportLoading] = useState(false);
   const [importSuccess, setImportSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [showScoreInfo, setShowScoreInfo] = useState(false);
 
   // Form state
   const [xHandle, setXHandle] = useState(initialData?.xHandle || '');
@@ -657,7 +658,16 @@ export default function VoiceSetupWizard({ initialData, onSave, onCancel }: Voic
                 {/* Voice Confidence */}
                 <div className="p-4 bg-white/5 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Style Match Score</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">Style Match Score</span>
+                      <button
+                        onClick={() => setShowScoreInfo(!showScoreInfo)}
+                        className="p-1 hover:bg-white/10 rounded transition-colors"
+                        title="What does this mean?"
+                      >
+                        <Info className="w-4 h-4 text-gray-400" />
+                      </button>
+                    </div>
                     <span className={`text-2xl font-bold ${confidence >= 70 ? 'text-green-400' : confidence >= 40 ? 'text-yellow-400' : 'text-gray-400'}`}>
                       {confidence}%
                     </span>
@@ -678,9 +688,63 @@ export default function VoiceSetupWizard({ initialData, onSave, onCancel }: Voic
                       : 'Basic profile. Consider completing more sections.'}
                   </p>
 
+                  {/* Info Card */}
+                  {showScoreInfo && (
+                    <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <Info className="w-4 h-4 text-blue-400" />
+                          <span className="text-sm font-medium text-blue-400">What is Style Match?</span>
+                        </div>
+                        <button
+                          onClick={() => setShowScoreInfo(false)}
+                          className="p-1 hover:bg-white/10 rounded transition-colors"
+                        >
+                          <XIcon className="w-4 h-4 text-gray-400" />
+                        </button>
+                      </div>
+                      <p className="text-sm text-gray-300 mb-4">
+                        This is how confident the AI will be in matching your writing style when generating reply drafts.
+                      </p>
+
+                      <div className="mb-4">
+                        <p className="text-xs font-medium text-gray-400 mb-2">How it&apos;s calculated:</p>
+                        <ul className="text-xs text-gray-400 space-y-1">
+                          <li>• Name: 8 pts</li>
+                          <li>• Bio: 10 pts</li>
+                          <li>• Tone: 7 pts</li>
+                          <li>• Style picker (5 questions): 5 pts each = 25 pts</li>
+                          <li>• Positioning statement: 10 pts</li>
+                          <li>• Avoid patterns: 5 pts</li>
+                          <li>• X handle linked: 5 pts</li>
+                          <li>• X bio imported: 5 pts</li>
+                          <li>• Sample replies imported: up to 20 pts (5 per reply)</li>
+                        </ul>
+                      </div>
+
+                      <div className="mb-4">
+                        <p className="text-xs font-medium text-gray-400 mb-2">What it means:</p>
+                        <ul className="text-xs space-y-1">
+                          <li className="text-gray-500">• <span className="text-gray-400">0-40%:</span> Basic - AI has minimal context, replies will be generic</li>
+                          <li className="text-yellow-400/80">• <span className="text-yellow-400">40-70%:</span> Good - AI knows your general style and preferences</li>
+                          <li className="text-green-400/80">• <span className="text-green-400">70-100%:</span> Excellent - AI can closely match how you actually write</li>
+                        </ul>
+                      </div>
+
+                      <p className="text-xs text-gray-400">
+                        At <span className="text-white font-medium">{confidence}%</span>,
+                        {confidence >= 70
+                          ? ' the AI has enough data to generate replies that sound like you. The more sample replies it imported from your X account, the better it can mimic your actual voice.'
+                          : confidence >= 40
+                          ? ' the AI has a good foundation. Add more details or link your X account to improve accuracy.'
+                          : ' consider completing more sections to help the AI better match your style.'}
+                      </p>
+                    </div>
+                  )}
+
                   {/* Score Breakdown */}
                   <div className="mt-4 pt-4 border-t border-white/10">
-                    <p className="text-xs font-medium text-gray-400 mb-3">What contributes to your score:</p>
+                    <p className="text-xs font-medium text-gray-400 mb-3">Your score breakdown:</p>
                     <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
                       <div className="flex items-center justify-between">
                         <span className={displayName ? 'text-green-400' : 'text-gray-500'}>
