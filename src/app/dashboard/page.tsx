@@ -259,9 +259,9 @@ function Sidebar({
             }`}
           >
             {sendingDigest ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin flex-shrink-0" />
             ) : (
-              <Zap className="w-4 h-4" />
+              <Zap className="w-4 h-4 flex-shrink-0" />
             )}
             {sendingDigest ? 'Working...' : 'Run Now'}
           </button>
