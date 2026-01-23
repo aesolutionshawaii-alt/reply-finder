@@ -657,7 +657,7 @@ export default function VoiceSetupWizard({ initialData, onSave, onCancel }: Voic
                 {/* Voice Confidence */}
                 <div className="p-4 bg-white/5 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium">Voice Confidence Score</span>
+                    <span className="text-sm font-medium">Style Match Score</span>
                     <span className={`text-2xl font-bold ${confidence >= 70 ? 'text-green-400' : confidence >= 40 ? 'text-yellow-400' : 'text-gray-400'}`}>
                       {confidence}%
                     </span>
@@ -677,6 +677,67 @@ export default function VoiceSetupWizard({ initialData, onSave, onCancel }: Voic
                       ? 'Good start! Add more details to improve accuracy.'
                       : 'Basic profile. Consider completing more sections.'}
                   </p>
+
+                  {/* Score Breakdown */}
+                  <div className="mt-4 pt-4 border-t border-white/10">
+                    <p className="text-xs font-medium text-gray-400 mb-3">What contributes to your score:</p>
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className={displayName ? 'text-green-400' : 'text-gray-500'}>
+                          {displayName ? <Check className="w-3 h-3 inline mr-1" /> : '○ '}Name
+                        </span>
+                        <span className="text-gray-500">8 pts</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className={bio ? 'text-green-400' : 'text-gray-500'}>
+                          {bio ? <Check className="w-3 h-3 inline mr-1" /> : '○ '}Bio
+                        </span>
+                        <span className="text-gray-500">10 pts</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className={tone ? 'text-green-400' : 'text-gray-500'}>
+                          {tone ? <Check className="w-3 h-3 inline mr-1" /> : '○ '}Tone
+                        </span>
+                        <span className="text-gray-500">7 pts</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className={positioning ? 'text-green-400' : 'text-gray-500'}>
+                          {positioning ? <Check className="w-3 h-3 inline mr-1" /> : '○ '}Positioning
+                        </span>
+                        <span className="text-gray-500">10 pts</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className={Object.keys(voiceAttributes).length >= 5 ? 'text-green-400' : 'text-gray-500'}>
+                          {Object.keys(voiceAttributes).length >= 5 ? <Check className="w-3 h-3 inline mr-1" /> : '○ '}Style questions
+                        </span>
+                        <span className="text-gray-500">25 pts</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className={avoidPatterns.length > 0 ? 'text-green-400' : 'text-gray-500'}>
+                          {avoidPatterns.length > 0 ? <Check className="w-3 h-3 inline mr-1" /> : '○ '}Avoid patterns
+                        </span>
+                        <span className="text-gray-500">5 pts</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className={xHandle ? 'text-green-400' : 'text-gray-500'}>
+                          {xHandle ? <Check className="w-3 h-3 inline mr-1" /> : '○ '}X handle
+                        </span>
+                        <span className="text-gray-500">5 pts</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className={xBio ? 'text-green-400' : 'text-gray-500'}>
+                          {xBio ? <Check className="w-3 h-3 inline mr-1" /> : '○ '}X bio
+                        </span>
+                        <span className="text-gray-500">5 pts</span>
+                      </div>
+                      <div className="flex items-center justify-between col-span-2">
+                        <span className={sampleReplies.length > 0 ? 'text-green-400' : 'text-gray-500'}>
+                          {sampleReplies.length > 0 ? <Check className="w-3 h-3 inline mr-1" /> : '○ '}Sample replies ({sampleReplies.length} imported)
+                        </span>
+                        <span className="text-gray-500">up to 20 pts</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Summary */}
