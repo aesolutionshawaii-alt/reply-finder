@@ -405,6 +405,7 @@ function DashboardContent() {
           setExampleReplies(data.profile.exampleReplies || '');
           setSkipPolitical(data.profile.skipPolitical ?? true);
           setVoiceConfidence(data.profile.voiceConfidence || 0);
+          setImportHandle(data.profile.xHandle || '');
         }
         setIsLoggedIn(true);
       }
