@@ -16,6 +16,11 @@ const POLITICAL_KEYWORDS = [
   'antifa', 'blm', 'woke', 'wokeism',
   'capitol', 'insurrection', 'impeach',
   'elon musk', 'doge',
+  // State politics
+  'blue state', 'red state', 'blue states', 'red states', 'swing state',
+  // Economic policy debates
+  'inflation', 'federal reserve', 'the fed', 'monetary policy',
+  'tariff', 'tariffs', 'trade war',
 ];
 
 // Separate list for keywords that need exact word boundary matching
@@ -92,7 +97,8 @@ export async function findOpportunities(
   accounts: MonitoredAccount[],
   userProfile: UserProfile | null,
   maxPerAccount: number = 10,
-  skipPolitical: boolean = true
+  skipPolitical: boolean = true,
+  sentTweetIds: Set<string> = new Set()
 ): Promise<ReplyOpportunity[]> {
   const allOpportunities: (ReplyOpportunity & { score: number; tweet: Tweet })[] = [];
 
@@ -107,6 +113,7 @@ export async function findOpportunities(
     for (const tweet of tweets) {
       if (!isRecent(tweet, 24)) continue;
       if (!isQualityTweet(tweet, skipPolitical)) continue;
+      if (sentTweetIds.has(tweet.id)) continue; // Skip already-sent tweets
 
       const opportunity: ReplyOpportunity & { score: number; tweet: Tweet } = {
         author: tweet.author.userName,

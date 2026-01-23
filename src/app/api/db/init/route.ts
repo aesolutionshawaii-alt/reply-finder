@@ -204,6 +204,19 @@ export async function GET() {
     await sql`CREATE INDEX IF NOT EXISTS idx_tweet_cache_handle ON tweet_cache(handle)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_tweet_cache_fetched ON tweet_cache(fetched_at)`;
 
+    // Sent tweets tracking to prevent duplicates across emails
+    await sql`
+      CREATE TABLE IF NOT EXISTS sent_tweets (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        tweet_id VARCHAR(255) NOT NULL,
+        sent_at TIMESTAMP DEFAULT NOW(),
+        UNIQUE(user_id, tweet_id)
+      )
+    `;
+    await sql`CREATE INDEX IF NOT EXISTS idx_sent_tweets_user ON sent_tweets(user_id)`;
+    await sql`CREATE INDEX IF NOT EXISTS idx_sent_tweets_sent_at ON sent_tweets(sent_at)`;
+
     // Create indexes
     await sql`CREATE INDEX IF NOT EXISTS idx_cron_runs_started ON cron_runs(started_at DESC)`;
     await sql`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`;

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { inngest } from '../../../../lib/inngest';
-import { getUserByEmail, getMonitoredAccounts, getUserProfile, logEmail, getActiveUsersByDeliveryHour } from '../../../../lib/db';
+import { getUserByEmail, getMonitoredAccounts, getUserProfile, logEmail, getActiveUsersByDeliveryHour, getSentTweetIds, saveSentTweets } from '../../../../lib/db';
 import { findOpportunities } from '../../../../lib/reply-finder';
 import { sendDigestEmail } from '../../../../lib/email';
 import { requireAuth, checkRateLimit, getClientIP } from '../../../../lib/auth';
@@ -18,7 +18,10 @@ async function processUserDigest(userId: number, email: string): Promise<{ statu
     const userProfile = await getUserProfile(userId);
     const skipPolitical = userProfile?.skip_political ?? true;
 
-    const opportunities = await findOpportunities(accounts, userProfile, 10, skipPolitical);
+    // Get previously sent tweet IDs to avoid duplicates
+    const sentTweetIds = new Set(await getSentTweetIds(userId));
+
+    const opportunities = await findOpportunities(accounts, userProfile, 10, skipPolitical, sentTweetIds);
 
     if (opportunities.length === 0) {
       await logEmail(userId, 0, 'no_opportunities');
@@ -28,6 +31,11 @@ async function processUserDigest(userId: number, email: string): Promise<{ statu
     const { success, error } = await sendDigestEmail(email, opportunities, userId);
 
     if (success) {
+      // Save sent tweet IDs to prevent duplicates in future emails
+      const newTweetIds = opportunities.map(opp => opp.tweetId).filter(Boolean) as string[];
+      if (newTweetIds.length > 0) {
+        await saveSentTweets(userId, newTweetIds);
+      }
       await logEmail(userId, opportunities.length, 'sent');
       return { status: 'sent', opportunities: opportunities.length };
     } else {
@@ -73,9 +81,12 @@ export async function GET(request: NextRequest) {
       const userProfile = await getUserProfile(user.id);
       const skipPolitical = userProfile?.skip_political ?? true;
 
-      console.log(`Test digest for ${testEmail} (${accounts.length} accounts)`);
+      // Get previously sent tweet IDs to avoid duplicates
+      const sentTweetIds = new Set(await getSentTweetIds(user.id));
 
-      const opportunities = await findOpportunities(accounts, userProfile, 10, skipPolitical);
+      console.log(`Test digest for ${testEmail} (${accounts.length} accounts, ${sentTweetIds.size} sent tweets to skip)`);
+
+      const opportunities = await findOpportunities(accounts, userProfile, 10, skipPolitical, sentTweetIds);
 
       if (opportunities.length === 0) {
         await logEmail(user.id, 0, 'no_opportunities');
@@ -85,6 +96,11 @@ export async function GET(request: NextRequest) {
       const { success, error } = await sendDigestEmail(user.email, opportunities, user.id);
 
       if (success) {
+        // Save sent tweet IDs to prevent duplicates in future emails
+        const newTweetIds = opportunities.map(opp => opp.tweetId).filter(Boolean) as string[];
+        if (newTweetIds.length > 0) {
+          await saveSentTweets(user.id, newTweetIds);
+        }
         await logEmail(user.id, opportunities.length, 'sent');
         return NextResponse.json({ success: true, opportunities: opportunities.length });
       } else {

@@ -789,3 +789,66 @@ export async function updateVoiceConfidenceFromFeedback(userId: number): Promise
     }
   }
 }
+
+// ============ SENT TWEETS TRACKING ============
+// Prevents duplicate tweets from appearing in consecutive emails
+
+export interface SentTweet {
+  id: number;
+  user_id: number;
+  tweet_id: string;
+  sent_at: Date;
+}
+
+/**
+ * Save tweet IDs that were sent to a user
+ * @param userId - The user's ID
+ * @param tweetIds - Array of tweet IDs that were included in the email
+ */
+export async function saveSentTweets(userId: number, tweetIds: string[]): Promise<void> {
+  if (tweetIds.length === 0) return;
+
+  const sql = getDb();
+  for (const tweetId of tweetIds) {
+    await sql`
+      INSERT INTO sent_tweets (user_id, tweet_id)
+      VALUES (${userId}, ${tweetId})
+      ON CONFLICT (user_id, tweet_id) DO UPDATE SET sent_at = NOW()
+    `;
+  }
+}
+
+/**
+ * Get tweet IDs that were recently sent to a user (last 7 days)
+ * @param userId - The user's ID
+ * @returns Array of tweet IDs
+ */
+export async function getSentTweetIds(userId: number): Promise<string[]> {
+  const sql = getDb();
+  const cutoffDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // 7 days ago
+
+  const result = await sql`
+    SELECT tweet_id FROM sent_tweets
+    WHERE user_id = ${userId}
+      AND sent_at > ${cutoffDate}
+  `;
+
+  return result.map((row: { tweet_id: string }) => row.tweet_id);
+}
+
+/**
+ * Clean up old sent tweet records (older than 7 days)
+ * Call this periodically to keep the table small
+ */
+export async function cleanupOldSentTweets(): Promise<number> {
+  const sql = getDb();
+  const cutoffDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  const result = await sql`
+    DELETE FROM sent_tweets
+    WHERE sent_at < ${cutoffDate}
+    RETURNING id
+  `;
+
+  return result.length;
+}
