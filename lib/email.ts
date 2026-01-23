@@ -194,18 +194,39 @@ export interface ReplyOpportunity {
   authorName: string;
   text: string;
   url: string;
+  tweetId: string;
   likes: number;
   retweets: number;
   draftReply?: string;
 }
 
+// Generate tracking URL
+function getTrackingUrl(userId: number, tweetId: string, action: string, draftReply: string, redirectUrl: string): string {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://xeroscroll.com';
+  const params = new URLSearchParams({
+    u: userId.toString(),
+    t: tweetId,
+    a: action,
+    d: encodeURIComponent(draftReply.substring(0, 500)), // Limit draft length in URL
+    r: redirectUrl,
+  });
+  return `${baseUrl}/api/track?${params.toString()}`;
+}
+
 export async function sendDigestEmail(
   to: string,
-  opportunities: ReplyOpportunity[]
+  opportunities: ReplyOpportunity[],
+  userId?: number
 ): Promise<{ success: boolean; error?: string }> {
   const opportunitiesHtml = opportunities
     .map(
-      (opp, i) => `
+      (opp, i) => {
+        // Use tracking URLs if userId provided
+        const replyUrl = userId
+          ? getTrackingUrl(userId, opp.tweetId, 'reply', opp.draftReply || '', opp.url)
+          : opp.url;
+
+        return `
       <tr>
         <td style="padding: 0 0 16px 0;">
           <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background: #18181b; border-radius: 12px;">
@@ -243,7 +264,7 @@ export async function sendDigestEmail(
                 <table cellpadding="0" cellspacing="0" border="0" style="margin-top: 16px;">
                   <tr>
                     <td style="background: #ffffff; border-radius: 8px;">
-                      <a href="${opp.url}" style="display: inline-block; padding: 12px 24px; font-size: 14px; font-weight: 600; color: #000000; text-decoration: none;">
+                      <a href="${replyUrl}" style="display: inline-block; padding: 12px 24px; font-size: 14px; font-weight: 600; color: #000000; text-decoration: none;">
                         Reply on X →
                       </a>
                     </td>
@@ -254,7 +275,8 @@ export async function sendDigestEmail(
           </table>
         </td>
       </tr>
-    `
+    `;
+      }
     )
     .join('');
 

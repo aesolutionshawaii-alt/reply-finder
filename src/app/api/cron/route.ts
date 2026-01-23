@@ -25,7 +25,7 @@ async function processUserDigest(userId: number, email: string): Promise<{ statu
       return { status: 'skipped', error: 'no_opportunities' };
     }
 
-    const { success, error } = await sendDigestEmail(email, opportunities);
+    const { success, error } = await sendDigestEmail(email, opportunities, userId);
 
     if (success) {
       await logEmail(userId, opportunities.length, 'sent');
@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'No opportunities found' }, { status: 200 });
       }
 
-      const { success, error } = await sendDigestEmail(user.email, opportunities);
+      const { success, error } = await sendDigestEmail(user.email, opportunities, user.id);
 
       if (success) {
         await logEmail(user.id, opportunities.length, 'sent');

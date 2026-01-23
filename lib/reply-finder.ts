@@ -1,5 +1,5 @@
 import { Tweet, fetchAccountTweets, isRecent } from './twitter';
-import { MonitoredAccount, UserProfile } from './db';
+import { MonitoredAccount, UserProfile, getReplyFeedback } from './db';
 import { ReplyOpportunity } from './email';
 import { generateReply, UserContext, TweetContext } from './claude';
 
@@ -113,6 +113,7 @@ export async function findOpportunities(
         authorName: tweet.author.name,
         text: tweet.text,
         url: tweet.url,
+        tweetId: tweet.id,
         likes: tweet.likeCount,
         retweets: tweet.retweetCount,
         score: scoreTweet(tweet),
@@ -134,6 +135,15 @@ export async function findOpportunities(
 
   // Generate AI replies if user has a profile
   if (userProfile && userProfile.bio) {
+    // Fetch reply feedback to learn from (replies they've used)
+    let usedReplies;
+    try {
+      const feedback = await getReplyFeedback(userProfile.user_id, 20);
+      usedReplies = feedback.filter(f => f.feedback_type === 'used' || f.feedback_type === 'copied');
+    } catch (err) {
+      console.error('Failed to fetch reply feedback:', err);
+    }
+
     const userContext: UserContext = {
       displayName: userProfile.display_name || 'User',
       bio: userProfile.bio || '',
@@ -146,6 +156,8 @@ export async function findOpportunities(
       voiceAttributes: userProfile.voice_attributes || undefined,
       avoidPatterns: userProfile.avoid_patterns || undefined,
       sampleReplies: userProfile.sample_replies || undefined,
+      // Feedback-based learning
+      usedReplies: usedReplies || undefined,
     };
 
     // Generate replies in parallel (batches of 3 to be safe with rate limits)

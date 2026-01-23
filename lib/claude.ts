@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { VoiceAttributes, AvoidPattern, SampleReply } from './db';
+import { VoiceAttributes, AvoidPattern, SampleReply, ReplyFeedback } from './db';
 
 let anthropicClient: Anthropic | null = null;
 
@@ -47,6 +47,8 @@ export interface UserContext {
   voiceAttributes?: VoiceAttributes;
   avoidPatterns?: AvoidPattern[];
   sampleReplies?: SampleReply[];
+  // Feedback-based learning
+  usedReplies?: ReplyFeedback[];
 }
 
 // Map avoid patterns to readable descriptions
@@ -142,6 +144,15 @@ function buildVoicePrompt(user: UserContext): string {
   } else if (user.exampleReplies) {
     // Fallback to legacy example replies
     voiceSection += `\n\nExample replies from ${user.displayName}:\n${user.exampleReplies}`;
+  }
+
+  // Add used replies as positive examples (learned from clicks)
+  if (user.usedReplies && user.usedReplies.length > 0) {
+    voiceSection += `\n\nReplies ${user.displayName} has used before (these worked well):`;
+    for (const feedback of user.usedReplies.slice(0, 5)) {
+      voiceSection += `\n- "${feedback.draft_reply}"`;
+    }
+    voiceSection += `\nUse similar style and approach.`;
   }
 
   return voiceSection;

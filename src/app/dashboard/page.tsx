@@ -1404,7 +1404,7 @@ function DashboardContent() {
                         </div>
                         {/* Info Card - Always Visible */}
                         <div className="mb-3 p-3 lg:p-4 bg-white/5 border border-white/10 rounded-lg">
-                          <p className="text-xs lg:text-sm font-medium text-gray-300 mb-2">What it means:</p>
+                          <p className="text-xs lg:text-sm font-medium text-gray-300 mb-2">Your replies get better every day.</p>
                           <ul className="text-xs lg:text-sm space-y-1.5 mb-3">
                             <li className="text-gray-500">0-40%: Basic - AI has minimal context, replies will be generic</li>
                             <li className="text-yellow-400/90">40-70%: Good - AI knows your general style and preferences</li>
@@ -1413,10 +1413,10 @@ function DashboardContent() {
                           <p className="text-xs lg:text-sm text-gray-400">
                             At <span className="text-white font-medium">{voiceConfidence}%</span>,
                             {voiceConfidence >= 70
-                              ? ' the AI has enough data to generate replies that sound like you. The more sample replies it imported from your X account, the better it can mimic your actual voice.'
+                              ? ' the AI has enough data to generate replies that sound like you. It also learns from which replies you use — the more you click, the better it gets at matching your voice.'
                               : voiceConfidence >= 40
-                              ? ' the AI knows your general style. Complete the setup wizard and link your X account to improve accuracy.'
-                              : ' set up your writing style and link your X account so the AI can learn how you write.'}
+                              ? ' the AI knows your general style. As you use replies from your daily digest, it learns what works for you and improves over time.'
+                              : ' set up your writing style and link your X account so the AI can learn how you write. Then use the replies in your daily digest — the AI learns from what you click.'}
                           </p>
                         </div>
 
