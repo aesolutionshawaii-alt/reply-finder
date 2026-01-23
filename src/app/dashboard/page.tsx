@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'motion/react';
-import { Zap, Users, User, CreditCard, ChevronRight, Clock, Mail, ArrowRight, Plus, X, Crown, BadgeCheck, Download, Loader2, Check, RefreshCw, Sparkles, Menu, Info } from 'lucide-react';
+import { Zap, Users, User, CreditCard, ChevronRight, Clock, Mail, ArrowRight, Plus, X, Crown, BadgeCheck, Download, Loader2, Check, RefreshCw, Sparkles, Menu, Info, Target, MessageSquare, TrendingUp } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import VoiceSetupWizard from '../components/VoiceSetupWizard';
@@ -1388,7 +1388,9 @@ function DashboardContent() {
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <h3 className="font-medium text-sm lg:text-base">Style Match</h3>
-                            <Info className="w-4 h-4 text-gray-400" />
+                            <button onClick={() => setShowStyleInfo(!showStyleInfo)} className="hover:text-gray-300 transition-colors">
+                              <Info className="w-4 h-4 text-gray-400" />
+                            </button>
                           </div>
                           <span className={`text-lg lg:text-xl font-bold ${voiceConfidence >= 70 ? 'text-green-400' : voiceConfidence >= 40 ? 'text-yellow-400' : 'text-gray-400'}`}>
                             {voiceConfidence}%
@@ -1402,21 +1404,23 @@ function DashboardContent() {
                             style={{ width: `${voiceConfidence}%` }}
                           />
                         </div>
-                        {/* Info Card - Always Visible */}
-                        <div className="mb-3 p-3 lg:p-4 bg-white/5 border border-white/10 rounded-lg">
-                          <p className="text-xs lg:text-sm font-medium text-white mb-3">Adaptive Voice System</p>
-                          <div className="text-xs lg:text-sm text-gray-400 space-y-3">
-                            <p>Most AI tools ask for a "tone" and call it personalization. We built something different.</p>
-                            <p>When you sign up, you answer 5 quick scenarios — how you respond to good news, how you push back on bad takes, how you add value. That maps to your actual communication style, not a generic "friendly" or "professional" label.</p>
-                            <p>Link your X account and we pull your real tweets. The AI sees how you actually write — your sentence length, your humor, your quirks.</p>
-                            <p>Then it learns from you. Every reply you click in your daily email gets logged. Those become examples for future replies. The system notices what works for you and does more of it.</p>
-                            <div className="pt-2 text-gray-500">
-                              <p>Day 1: It gets the basics right.</p>
-                              <p>Week 2: It stops making mistakes you'd never make.</p>
-                              <p>Month 2: People can't tell the difference.</p>
-                            </div>
+                        {/* Info Card - Toggleable */}
+                        {showStyleInfo && (
+                          <div className="mb-3 p-3 lg:p-4 bg-white/5 border border-white/10 rounded-lg">
+                            <p className="text-xs lg:text-sm font-medium text-gray-300 mb-2">What this means</p>
+                            <ul className="text-xs lg:text-sm space-y-1.5 mb-3">
+                              <li className="text-gray-500">0-40%: Basic. AI has minimal context, replies will be generic.</li>
+                              <li className="text-yellow-400/90">40-70%: Good. AI knows your general style and preferences.</li>
+                              <li className="text-green-400/90">70-100%: Excellent. AI closely matches how you actually write.</li>
+                            </ul>
+                            <p className="text-xs lg:text-sm font-medium text-gray-300 mb-2">How to improve</p>
+                            <ul className="text-xs lg:text-sm text-gray-400 space-y-1">
+                              <li>Complete the voice setup wizard</li>
+                              <li>Link your X account</li>
+                              <li>Use replies from your daily digest</li>
+                            </ul>
                           </div>
-                        </div>
+                        )}
 
                         <Button
                           onClick={() => setShowVoiceWizard(true)}
@@ -1427,6 +1431,88 @@ function DashboardContent() {
                           <Sparkles className="w-3.5 h-3.5 lg:w-4 lg:h-4 mr-2" />
                           {voiceConfidence > 0 ? 'Improve Writing Style' : 'Set Up Writing Style'}
                         </Button>
+                      </div>
+                    </div>
+                  </Card>
+
+                  {/* Adaptive Voice System Card */}
+                  <Card className="bg-gradient-to-br from-blue-500/5 to-transparent border-white/10 p-4 lg:p-8 mb-6">
+                    {/* Header */}
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="p-2.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                        <Sparkles className="w-5 h-5 lg:w-6 lg:h-6 text-blue-500" />
+                      </div>
+                      <h2 className="text-xl lg:text-2xl font-medium">Adaptive Voice System</h2>
+                    </div>
+
+                    {/* Intro */}
+                    <p className="text-gray-300 leading-relaxed mb-8 text-sm lg:text-base">
+                      Most AI tools ask for a "tone" and call it personalization. We built something different.
+                    </p>
+
+                    {/* Three Steps */}
+                    <div className="space-y-6 mb-8">
+                      {/* Step 1 */}
+                      <div className="flex gap-4">
+                        <div className="flex-shrink-0 mt-1">
+                          <div className="p-2 rounded-md bg-white/5 border border-white/10">
+                            <Target className="w-5 h-5 text-blue-400" />
+                          </div>
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-white mb-2 text-sm lg:text-base">Map your communication style</h3>
+                          <p className="text-xs lg:text-sm text-gray-400 leading-relaxed">
+                            When you sign up, you answer 5 quick scenarios: how you respond to good news, how you push back on bad takes, how you add value. That maps to your actual communication style, not a generic "friendly" or "professional" label.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Step 2 */}
+                      <div className="flex gap-4">
+                        <div className="flex-shrink-0 mt-1">
+                          <div className="p-2 rounded-md bg-white/5 border border-white/10">
+                            <MessageSquare className="w-5 h-5 text-blue-400" />
+                          </div>
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-white mb-2 text-sm lg:text-base">Learn from your real voice</h3>
+                          <p className="text-xs lg:text-sm text-gray-400 leading-relaxed">
+                            Link your X account and we pull your real tweets. The AI sees how you actually write: your sentence length, your humor, your quirks.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Step 3 */}
+                      <div className="flex gap-4">
+                        <div className="flex-shrink-0 mt-1">
+                          <div className="p-2 rounded-md bg-white/5 border border-white/10">
+                            <TrendingUp className="w-5 h-5 text-blue-400" />
+                          </div>
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-white mb-2 text-sm lg:text-base">Improve with every interaction</h3>
+                          <p className="text-xs lg:text-sm text-gray-400 leading-relaxed">
+                            Then it learns from you. Every reply you click in your daily email gets logged. Those become examples for future replies. The system notices what works for you and does more of it.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Timeline */}
+                    <div className="border-t border-white/10 pt-6">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="p-4 bg-white/5 rounded-lg border border-white/10">
+                          <div className="text-xs text-blue-400 font-medium mb-1">Day 1</div>
+                          <div className="text-sm text-gray-300">It gets the basics right.</div>
+                        </div>
+                        <div className="p-4 bg-white/5 rounded-lg border border-white/10">
+                          <div className="text-xs text-blue-400 font-medium mb-1">Week 2</div>
+                          <div className="text-sm text-gray-300">It stops making mistakes you&apos;d never make.</div>
+                        </div>
+                        <div className="p-4 bg-white/5 rounded-lg border border-white/10">
+                          <div className="text-xs text-blue-400 font-medium mb-1">Month 2</div>
+                          <div className="text-sm text-gray-300">People can&apos;t tell the difference.</div>
+                        </div>
                       </div>
                     </div>
                   </Card>
