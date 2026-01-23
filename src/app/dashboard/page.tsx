@@ -252,13 +252,21 @@ function Sidebar({
           <button
             onClick={onRunNow}
             disabled={sendingDigest}
-            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm bg-green-600 hover:bg-green-700 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-white transition-all ${
+              sendingDigest
+                ? 'bg-green-600/80 animate-pulse cursor-wait'
+                : 'bg-green-600 hover:bg-green-700'
+            }`}
           >
-            <Zap className={`w-4 h-4 ${sendingDigest ? 'animate-pulse' : ''}`} />
+            {sendingDigest ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Zap className="w-4 h-4" />
+            )}
             {sendingDigest ? 'Working...' : 'Run Now'}
           </button>
           {sendingDigest && (
-            <p className="text-xs text-gray-500 px-3 mt-2">~30-60 seconds</p>
+            <p className="text-xs text-gray-500 px-3 mt-2 animate-pulse">~30-60 seconds</p>
           )}
         </div>
 
