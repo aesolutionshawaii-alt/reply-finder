@@ -1424,8 +1424,8 @@ function DashboardContent() {
 
                         <Button
                           onClick={() => setShowVoiceWizard(true)}
-                          variant="ghost"
-                          className="bg-purple-500 hover:bg-purple-600 !text-white text-xs lg:text-sm"
+                          variant="outline"
+                          className="border-white/30 hover:bg-white/10 text-white text-xs lg:text-sm"
                           size="sm"
                         >
                           <Sparkles className="w-3.5 h-3.5 lg:w-4 lg:h-4 mr-2" />
