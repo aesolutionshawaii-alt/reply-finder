@@ -135,6 +135,7 @@ export default function VoiceSetupWizard({ initialData, onSave, onCancel }: Voic
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [importLoading, setImportLoading] = useState(false);
+  const [importSuccess, setImportSuccess] = useState(false);
   const [error, setError] = useState('');
 
   // Form state
@@ -158,6 +159,7 @@ export default function VoiceSetupWizard({ initialData, onSave, onCancel }: Voic
     }
 
     setImportLoading(true);
+    setImportSuccess(false);
     setError('');
 
     try {
@@ -180,8 +182,10 @@ export default function VoiceSetupWizard({ initialData, onSave, onCancel }: Voic
       }
       setSampleTweets(data.sampleTweets || []);
       setSampleReplies(data.sampleReplies || []);
+      setImportSuccess(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to import profile');
+      setImportSuccess(false);
     } finally {
       setImportLoading(false);
     }
@@ -335,25 +339,66 @@ export default function VoiceSetupWizard({ initialData, onSave, onCancel }: Voic
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-300">Your X Handle</label>
                   <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={xHandle}
-                      onChange={(e) => setXHandle(e.target.value)}
-                      placeholder="@yourusername"
-                      className="flex-1 px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                    />
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={xHandle}
+                        onChange={(e) => {
+                          setXHandle(e.target.value);
+                          setImportSuccess(false);
+                        }}
+                        placeholder="@yourusername"
+                        className={`w-full px-4 py-2.5 bg-white/5 border rounded-lg text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 transition-colors ${
+                          importSuccess
+                            ? 'border-green-500/50 focus:ring-green-500/50'
+                            : 'border-white/10 focus:ring-blue-500/50'
+                        }`}
+                      />
+                      {importSuccess && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <Check className="w-5 h-5 text-green-400" />
+                        </div>
+                      )}
+                    </div>
                     <Button
                       onClick={handleImportFromX}
                       disabled={importLoading || !xHandle.trim()}
-                      className="bg-blue-500 hover:bg-blue-600"
+                      className={importSuccess ? 'bg-green-500 hover:bg-green-600' : 'bg-blue-500 hover:bg-blue-600'}
                     >
-                      {importLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Import'}
+                      {importLoading ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : importSuccess ? (
+                        <>
+                          <Check className="w-4 h-4 mr-1" />
+                          Linked
+                        </>
+                      ) : (
+                        'Import'
+                      )}
                     </Button>
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
-                    We'll fetch your bio and recent tweets to help match your style
+                    {importSuccess
+                      ? 'Profile imported successfully. Continue to the next step.'
+                      : "We'll fetch your bio and recent tweets to help match your style"}
                   </p>
                 </div>
+
+                {/* Success Banner */}
+                {importSuccess && (
+                  <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-lg flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center flex-shrink-0">
+                      <Check className="w-4 h-4 text-green-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-green-400">X account linked</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        Imported {sampleReplies.length > 0 ? `${sampleReplies.length} sample replies` : 'your profile'}
+                        {sampleTweets.length > 0 ? ` and ${sampleTweets.length} tweets` : ''}.
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 {xBio && (
                   <div className="mt-4 p-4 bg-white/5 rounded-lg">
