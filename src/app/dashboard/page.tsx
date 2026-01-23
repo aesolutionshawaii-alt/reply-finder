@@ -1388,13 +1388,7 @@ function DashboardContent() {
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
                             <h3 className="font-medium text-sm lg:text-base">Style Match</h3>
-                            <button
-                              onClick={() => setShowStyleInfo(!showStyleInfo)}
-                              className="p-1 hover:bg-white/10 rounded transition-colors"
-                              title="What does this mean?"
-                            >
-                              <Info className="w-4 h-4 text-gray-400" />
-                            </button>
+                            <Info className="w-4 h-4 text-gray-400" />
                           </div>
                           <span className={`text-lg lg:text-xl font-bold ${voiceConfidence >= 70 ? 'text-green-400' : voiceConfidence >= 40 ? 'text-yellow-400' : 'text-gray-400'}`}>
                             {voiceConfidence}%
@@ -1408,41 +1402,23 @@ function DashboardContent() {
                             style={{ width: `${voiceConfidence}%` }}
                           />
                         </div>
-                        <p className="text-xs lg:text-sm text-gray-400 mb-2 lg:mb-3">
-                          {voiceConfidence >= 70
-                            ? 'Excellent! Your replies will closely match your style.'
-                            : voiceConfidence >= 40
-                            ? 'Good start! Complete the setup for better results.'
-                            : 'Set up your writing style for AI replies that sound like you.'}
-                        </p>
-
-                        {/* Info Card */}
-                        {showStyleInfo && (
-                          <div className="mb-3 p-3 lg:p-4 bg-white/5 border border-white/10 rounded-lg">
-                            <div className="flex items-start justify-between mb-3">
-                              <span className="text-xs lg:text-sm font-medium text-gray-300">What it means:</span>
-                              <button
-                                onClick={() => setShowStyleInfo(false)}
-                                className="p-1 hover:bg-white/10 rounded transition-colors -mr-1 -mt-1"
-                              >
-                                <X className="w-4 h-4 text-gray-500" />
-                              </button>
-                            </div>
-                            <ul className="text-xs lg:text-sm space-y-1.5 mb-3">
-                              <li className="text-gray-500">0-40%: Basic - AI has minimal context, replies will be generic</li>
-                              <li className="text-yellow-400/90">40-70%: Good - AI knows your general style and preferences</li>
-                              <li className="text-green-400/90">70-100%: Excellent - AI can closely match how you actually write</li>
-                            </ul>
-                            <p className="text-xs lg:text-sm text-gray-400">
-                              At <span className="text-white font-medium">{voiceConfidence}%</span>,
-                              {voiceConfidence >= 70
-                                ? ' the AI has enough data to generate replies that sound like you. The more sample replies it imported from your X account, the better it can mimic your actual voice.'
-                                : voiceConfidence >= 40
-                                ? ' the AI knows your general style. Complete the setup wizard and link your X account to improve accuracy.'
-                                : ' set up your writing style and link your X account so the AI can learn how you write.'}
-                            </p>
-                          </div>
-                        )}
+                        {/* Info Card - Always Visible */}
+                        <div className="mb-3 p-3 lg:p-4 bg-white/5 border border-white/10 rounded-lg">
+                          <p className="text-xs lg:text-sm font-medium text-gray-300 mb-2">What it means:</p>
+                          <ul className="text-xs lg:text-sm space-y-1.5 mb-3">
+                            <li className="text-gray-500">0-40%: Basic - AI has minimal context, replies will be generic</li>
+                            <li className="text-yellow-400/90">40-70%: Good - AI knows your general style and preferences</li>
+                            <li className="text-green-400/90">70-100%: Excellent - AI can closely match how you actually write</li>
+                          </ul>
+                          <p className="text-xs lg:text-sm text-gray-400">
+                            At <span className="text-white font-medium">{voiceConfidence}%</span>,
+                            {voiceConfidence >= 70
+                              ? ' the AI has enough data to generate replies that sound like you. The more sample replies it imported from your X account, the better it can mimic your actual voice.'
+                              : voiceConfidence >= 40
+                              ? ' the AI knows your general style. Complete the setup wizard and link your X account to improve accuracy.'
+                              : ' set up your writing style and link your X account so the AI can learn how you write.'}
+                          </p>
+                        </div>
 
                         <Button
                           onClick={() => setShowVoiceWizard(true)}
