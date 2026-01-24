@@ -1,5 +1,5 @@
 import { inngest } from './inngest';
-import { getActiveUsersByDeliveryHour, getMonitoredAccounts, getUserProfile, logEmail, MonitoredAccount, UserProfile, createCronRun, updateCronRun, getDb } from './db';
+import { getActiveUsersByDeliveryHour, getMonitoredAccounts, getUserProfile, logEmail, MonitoredAccount, UserProfile, createCronRun, updateCronRun, getDb, getSentTweetIds, saveSentTweets } from './db';
 import { findOpportunities } from './reply-finder';
 import { sendDigestEmail, sendCronAlertEmail } from './email';
 
@@ -31,11 +31,16 @@ export const sendUserDigest = inngest.createFunction(
 
     const skipPolitical = userProfile?.skip_political ?? true;
 
-    console.log(`Finding opportunities for ${email} (${accounts.length} accounts)`);
+    // Get previously sent tweet IDs to avoid duplicates
+    const sentTweetIds = await step.run('get-sent-tweets', async () => {
+      return getSentTweetIds(userId);
+    }) as unknown as string[];
+
+    console.log(`Finding opportunities for ${email} (${accounts.length} accounts, ${sentTweetIds.length} sent tweets to skip)`);
 
     // Find opportunities and generate replies
     const opportunities = await step.run('find-opportunities', async () => {
-      return findOpportunities(accounts, userProfile, 10, skipPolitical);
+      return findOpportunities(accounts, userProfile, 10, skipPolitical, new Set(sentTweetIds));
     });
 
     if (opportunities.length === 0) {
@@ -52,6 +57,13 @@ export const sendUserDigest = inngest.createFunction(
     });
 
     if (result.success) {
+      // Save sent tweet IDs to prevent duplicates in future emails
+      await step.run('save-sent-tweets', async () => {
+        const newTweetIds = opportunities.map(opp => opp.tweetId).filter(Boolean) as string[];
+        if (newTweetIds.length > 0) {
+          await saveSentTweets(userId, newTweetIds);
+        }
+      });
       await step.run('log-success', async () => {
         await logEmail(userId, opportunities.length, 'sent');
       });
